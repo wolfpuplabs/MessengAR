@@ -87,7 +87,6 @@
 <!-- CHAT SCREEN -->
 <div id="screen-chat" class="screen">
   <header>
-    <!-- FITUR BARU: Tombol Hapus Chat -->
     <button id="btnClear" class="iconbtn" style="font-size: 16px;" title="Bersihkan Obrolan">🗑️</button>
     <h1 class="logo">Stick-AR</h1>
     <button id="btnName" class="iconbtn" title="Ganti Nama">✎</button>
@@ -185,11 +184,7 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- 
-      SOLUSI iPAD 'Belum Ada Naga': 
-      Menghapus tag <a-assets> karena sistem pre-load A-Frame kadang macet di iOS. 
-      Menggunakan parameter 'url' secara langsung agar langsung diload saat dipanggil.
-    -->
+    <!-- Naga Entity -->
     <a-entity 
       id="dragon-entity" 
       gltf-model="url(dragon.glb)" 
@@ -210,14 +205,16 @@
           position="0 0 0">
         </a-entity>
         
-        <!-- Tombol 3D Balas/Kembali -->
-        <a-entity 
-          id="dragon-action-btn"
-          geometry="primitive: plane; width: 1.0; height: 0.3"
-          material="color: #45a29e; shader: flat; transparent: true; opacity: 0.9"
-          text="value: REPLY; font: roboto; align: center; width: 2.5; color: #ffffff; wrapCount: 15"
-          position="0 -0.8 0"
-          visible="false">
+        <!-- FITUR BARU: Tombol 3D Balas/Kembali (Desain Kapsul, Diperkecil) -->
+        <a-entity id="dragon-action-btn" position="0 -0.8 0" visible="false">
+          <!-- Badan Kapsul (Tengah) -->
+          <a-plane id="btn-body" width="0.6" height="0.2" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
+          <!-- Lengkungan Kiri -->
+          <a-circle id="btn-left" radius="0.1" position="-0.3 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+          <!-- Lengkungan Kanan -->
+          <a-circle id="btn-right" radius="0.1" position="0.3 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+          <!-- Teks Tombol -->
+          <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 1.2; color: #ffffff; wrapCount: 12" position="0 0 0.01"></a-entity>
         </a-entity>
         
       </a-entity>
@@ -258,7 +255,6 @@
   $('#btnName').onclick = () => { $('#nameInput').value = myName; $('#nameModal').hidden = false; };
   if (!myName) $('#nameModal').hidden = false;
 
-  // Hapus Chat Logic
   $('#btnClear').onclick = () => {
     if (confirm('Yakin ingin menghapus semua pesan?')) {
       msgs = [];
@@ -451,7 +447,6 @@
           });
         });
 
-        // SOLUSI iPAD 'Belum Ada Naga': Fallback system jika lantai gagal dicari
         session.requestReferenceSpace('local-floor').then((space) => { 
           this.refSpace = space; 
         }).catch(() => {
@@ -544,13 +539,23 @@
         bubble.setAttribute('visible', 'true');
         
         speakAndPlay(currentPayload, () => {
+           // Mengontrol properti warna dari elemen-elemen Kapsul
            const actionBtn = document.getElementById('dragon-action-btn');
+           const btnBody = document.getElementById('btn-body');
+           const btnLeft = document.getElementById('btn-left');
+           const btnRight = document.getElementById('btn-right');
+           const btnText = document.getElementById('btn-text');
+
            if (replyAllowed) {
-             actionBtn.setAttribute('text', 'value', 'REPLY');
-             actionBtn.setAttribute('material', 'color', '#45a29e');
+             btnText.setAttribute('text', 'value', 'REPLY');
+             btnBody.setAttribute('color', '#45a29e');
+             btnLeft.setAttribute('color', '#45a29e');
+             btnRight.setAttribute('color', '#45a29e');
            } else {
-             actionBtn.setAttribute('text', 'value', 'REPLY'); 
-             actionBtn.setAttribute('material', 'color', '#1f2833'); 
+             btnText.setAttribute('text', 'value', 'REPLY'); 
+             btnBody.setAttribute('color', '#1f2833'); 
+             btnLeft.setAttribute('color', '#1f2833');
+             btnRight.setAttribute('color', '#1f2833');
            }
            actionBtn.setAttribute('visible', 'true');
            
@@ -561,9 +566,7 @@
     }
   };
 
-  // SOLUSI iPAD 'Layar Blank Putih': Gunakan metode Reload Paksa
   const closeAR = (replyTarget = null) => { 
-    // Matikan suara & paksa keluar
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
     
@@ -572,12 +575,10 @@
       try { scene.exitVR(); } catch(e) {}
     }
     
-    // Amankan data target balasan ke penyimpanan sesi
     if (replyTarget) {
       sessionStorage.setItem('sar_replyTo', replyTarget);
     }
     
-    // Restart halaman agar mesin WebGL yang macet hancur sepenuhnya
     window.location.reload();
   };
 
@@ -593,11 +594,10 @@
   const initMatch = location.hash.match(/m=(.+)/);
   if (initMatch) { try { handlePayload(dec(initMatch[1])); } catch(e){} }
   
-  // SOLUSI iPAD 'Layar Blank Putih': Cek jika user baru saja kembali (reload) dari menekan tombol reply di AR
   const pendingReply = sessionStorage.getItem('sar_replyTo');
   if (pendingReply) {
     setReply(pendingReply);
-    sessionStorage.removeItem('sar_replyTo'); // Bersihkan setelah dipakai
+    sessionStorage.removeItem('sar_replyTo'); 
     toast('Membalas pesan ke ' + pendingReply);
   }
 </script>
