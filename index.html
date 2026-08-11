@@ -276,7 +276,8 @@
       shareTitle: "Stick-AR",
       shareText: "Ada pesan AR untukmu!",
       incFrom: "Pesan rahasia dari ",
-      confirmClear: "Yakin ingin menghapus semua pesan?"
+      confirmClear: "Yakin ingin menghapus semua pesan?",
+      genLink: "Membuat link pendek... ⏳"
     },
     en: {
       btnSend: "Send",
@@ -314,7 +315,8 @@
       shareTitle: "Stick-AR",
       shareText: "There's an AR message for you!",
       incFrom: "Secret message from ",
-      confirmClear: "Are you sure you want to clear the chat?"
+      confirmClear: "Are you sure you want to clear the chat?",
+      genLink: "Generating short link... ⏳"
     }
   };
 
@@ -396,7 +398,6 @@
       const d = document.createElement('div');
       if (m.kind === 'event') {
         d.className = 'event'; d.dataset.i = i;
-        // Penyesuaian nama di chat log
         const pObj = Array.isArray(m.payload) ? { from: m.payload[2], to: m.payload[3] } : m.payload;
         const actionTxt = m.dir === 'out' 
           ? t.msgSent + (pObj.to ? (lang === 'id' ? ' ke ' : ' to ') + pObj.to : '') 
@@ -421,7 +422,6 @@
     if (!el) return;
     const m = msgs[el.dataset.i];
     if (m && m.payload) {
-      // Decode array payload if necessary
       const p = Array.isArray(m.payload) 
         ? { v: m.payload[0], id: m.payload[1], from: m.payload[2], to: m.payload[3], text: m.payload[4], audio: m.payload[5], t: m.payload[6] } 
         : m.payload;
@@ -469,28 +469,43 @@
     }).catch(() => toast(t.toastMicDeny));
   };
 
-  /* ================= SEND LOGIC ================= */
-  $('#btnSend').onclick = () => {
+  /* ================= SEND LOGIC (TINYURL INTEGRATION) ================= */
+  $('#btnSend').onclick = async () => {
     const t = i18n[lang];
     const text = $('#txt').value.trim();
     if (!text && !pendingAudio) return toast(t.toastEmpty);
     
     const payloadObj = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
-    
-    // KOMPRESI PAYLOAD: Menggunakan Array agar link lebih pendek
     const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
     
     msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
     store.set('sar_msgs', JSON.stringify(msgs));
     renderMsgs();
     
-    lastShare = baseLink() + '#m=' + enc(compactPayload);
-    $('#shareLink').textContent = lastShare;
+    const longLink = baseLink() + '#m=' + enc(compactPayload);
+    lastShare = longLink; // Set default ke link panjang dulu
+    
+    // Tampilkan modal loading ke pengguna
+    $('#shareLink').textContent = t.genLink;
     $('#screen-share').hidden = false;
     $('#txt').value = '';
     pendingAudio = null;
     $('#btnMic').classList.remove('mic-on');
     setReply(null); 
+    
+    // Proses pemendekan TinyURL
+    try {
+      const response = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longLink));
+      if (response.ok) {
+        const shortUrl = await response.text();
+        lastShare = shortUrl;
+      }
+    } catch (err) {
+      console.warn("Gagal membuat TinyURL, sistem menggunakan link panjang sebagai cadangan.", err);
+    }
+    
+    // Tampilkan link final (pendek atau panjang jika gagal) ke layar pengguna
+    $('#shareLink').textContent = lastShare;
   };
 
   $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
@@ -503,7 +518,6 @@
 
   /* ================= INCOMING LOGIC ================= */
   function handlePayload(p) {
-    // Backward compatibility untuk link lama (Objek) dan link baru (Array Kompresi)
     const parsed = Array.isArray(p) 
       ? { v: p[0], id: p[1], from: p[2], to: p[3], text: p[4], audio: p[5], t: p[6] } 
       : p;
@@ -526,7 +540,6 @@
       const pid = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
       return pid === currentPayload.id;
     })) {
-      // Simpan kembali dalam format Array kompresi ke local storage
       const compactPayload = [1, currentPayload.id, currentPayload.from, currentPayload.to, currentPayload.text, currentPayload.audio, currentPayload.t];
       msgs.push({ kind: 'event', dir: 'in', payload: compactPayload, t: Date.now() });
       store.set('sar_msgs', JSON.stringify(msgs));
