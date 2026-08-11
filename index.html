@@ -23,7 +23,6 @@
       color: #f0f4f8; height: 100vh; overflow: hidden; 
     }
     
-    /* Screen Chat dibuat z-index paling tinggi agar selalu menutupi AR saat aktif */
     .screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 20; background: #0b0c10; }
     
     .glass-panel {
@@ -171,8 +170,8 @@
 </div>
 
 <!-- A-FRAME SCENE -->
-<!-- Membiarkannya selalu hidup di DOM, tapi posisinya di bawah layar chat -->
-<div id="scene-wrapper" style="position: absolute; inset: 0; z-index: 1;">
+<!-- Dibungkus dan di-display:none saat chat aktif untuk menghindari bug layar putih di iOS -->
+<div id="scene-wrapper" style="display: none; position: absolute; inset: 0; z-index: 1;">
   <a-scene 
     webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
     renderer="colorManagement: true"
@@ -201,7 +200,8 @@
       visible="false"
       animation-mixer="clip: *">
       
-      <!-- 3D Text Melayang Tanpa Plane -->
+      <!-- 3D Text Melayang Tanpa Plane Background -->
+      <!-- Outline Hitam ditebalkan agar terbaca di segala latar belakang -->
       <a-entity 
         id="dragon-bubble"
         position="0 2.5 0"
@@ -210,7 +210,7 @@
         
         <a-entity 
           id="dragon-text" 
-          text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000; outlineWidth: 0.05" 
+          text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.08" 
           position="0 0 0">
         </a-entity>
         
@@ -442,8 +442,9 @@
     currentPayload = payload;
     replyAllowed = payload && payload.from && payload.from !== myName;
     
-    // Sembunyikan layer chat
+    // Tampilkan canvas AR dan hilangkan UI Chat
     $('#screen-chat').hidden = true;
+    $('#scene-wrapper').style.display = 'block';
     $('#ar-ui-container').hidden = false;
     
     // Reset State
@@ -478,7 +479,7 @@
       $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        // Update Teks 3D dan atur Word Wrap
+        // Tampilkan Teks 3D dengan Word Wrap (wrapCount: 26) tanpa Plane
         textEl.setAttribute('text', 'value', currentPayload.text);
         bubble.setAttribute('visible', 'true');
         
@@ -493,12 +494,13 @@
     }
   };
 
-  // Mencegah Layar Blank: Menampilkan kembali layer chat saat VR Session selesai
+  // Matikan A-Frame dari display saat keluar untuk MENCEGAH LAYAR PUTIH di iOS
   document.querySelector('a-scene').addEventListener('exit-vr', function () {
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
     
-    // Matikan AR overlay, hidupkan layer Chat
+    // Sembunyikan elemen 3D secara penuh untuk membersihkan context
+    $('#scene-wrapper').style.display = 'none';
     $('#ar-ui-container').hidden = true;
     $('#screen-chat').hidden = false;
   });
