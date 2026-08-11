@@ -172,8 +172,9 @@
   A-Frame tetap bisa menginisialisasi WebGL Canvas dengan ukuran yang benar sejak awal.
 -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
+  <!-- MODIFIKASI: Menghapus dom-overlay agar tidak freeze di WebXR Viewer -->
   <a-scene 
-    webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
+    webxr="optionalFeatures: hit-test"
     renderer="colorManagement: true"
     vr-mode-ui="enabled: false"
     transparent="true">
@@ -394,6 +395,15 @@
 
       this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
+        
+        // MODIFIKASI: Deteksi tap layar karena tombol HTML di dalam AR tidak akan muncul
+        session.addEventListener('select', () => {
+          const reticle = document.getElementById('reticle');
+          if (reticle.getAttribute('visible')) {
+            $('#btnPlace').click();
+          }
+        });
+
         session.requestReferenceSpace('viewer').then((space) => {
           this.viewerSpace = space;
           session.requestHitTestSource({ space: this.viewerSpace }).then((hitTestSource) => {
@@ -423,7 +433,7 @@
             
             if ($('#dragon-entity').getAttribute('visible') === false) {
                 $('#btnPlace').hidden = false;
-                $('#arHint').textContent = "Lantai ditemukan! Tap Panggil Naga.";
+                $('#arHint').textContent = "Lantai ditemukan! Sentuh layar untuk panggil Naga.";
             }
           } else {
              document.getElementById('reticle').setAttribute('visible', 'false');
@@ -450,6 +460,7 @@
     wrapper.style.visibility = 'visible';
     wrapper.style.zIndex = '100';
     
+    // Menampilkan kontainer (meski tombol di dalamnya takkan bisa di-klik saat di iPad)
     $('#ar-ui-container').hidden = false;
     
     // Reset State
