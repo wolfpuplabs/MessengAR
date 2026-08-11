@@ -215,6 +215,16 @@
           position="0 0 0">
         </a-entity>
         
+        <!-- TAMBAHAN: Tombol 3D Balas/Kembali -->
+        <a-entity 
+          id="dragon-action-btn"
+          geometry="primitive: plane; width: 2.2; height: 0.4"
+          material="color: #45a29e; shader: flat; transparent: true; opacity: 0.9"
+          text="value: TAP LAYAR UNTUK BALAS; font: roboto; align: center; width: 2; color: #ffffff; wrapCount: 20"
+          position="0 -0.8 0"
+          visible="false">
+        </a-entity>
+        
       </a-entity>
     </a-entity>
   </a-scene>
@@ -396,8 +406,20 @@
       this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
         
-        // MODIFIKASI: Deteksi tap layar karena tombol HTML di dalam AR tidak akan muncul
+        // MODIFIKASI: Deteksi tap layar untuk penempatan Naga DAN klik Tombol 3D
         session.addEventListener('select', () => {
+          // 1. Cek apakah tombol 3D sedang tampil (mode baca pesan selesai)
+          const actionBtn = document.getElementById('dragon-action-btn');
+          if (actionBtn && actionBtn.getAttribute('visible')) {
+            if (replyAllowed) {
+              $('#btnReply').click();
+            } else {
+              $('#btnBack').click();
+            }
+            return; // Hentikan fungsi di sini agar naga tidak berpindah
+          }
+
+          // 2. Jika tombol belum muncul, tap layar berfungsi untuk menempatkan naga
           const reticle = document.getElementById('reticle');
           if (reticle.getAttribute('visible')) {
             $('#btnPlace').click();
@@ -466,6 +488,7 @@
     // Reset State
     $('#dragon-entity').setAttribute('visible', 'false');
     $('#dragon-bubble').setAttribute('visible', 'false');
+    $('#dragon-action-btn').setAttribute('visible', 'false');
     $('#arMessageAudio').pause();
     window.speechSynthesis.cancel(); 
     
@@ -500,10 +523,21 @@
         bubble.setAttribute('visible', 'true');
         
         speakAndPlay(currentPayload, () => {
+           // Tampilkan Tombol 3D setelah suara/animasi selesai
+           const actionBtn = document.getElementById('dragon-action-btn');
            if (replyAllowed) {
-             $('#btnReply').hidden = false;
+             actionBtn.setAttribute('text', 'value', 'TAP LAYAR UNTUK BALAS');
+             actionBtn.setAttribute('material', 'color', '#45a29e');
            } else {
-             $('#btnBack').hidden = false;
+             actionBtn.setAttribute('text', 'value', 'TAP LAYAR UNTUK KEMBALI');
+             actionBtn.setAttribute('material', 'color', '#e33333');
+           }
+           actionBtn.setAttribute('visible', 'true');
+           
+           if (replyAllowed) {
+             $('#btnReply').hidden = false; // Sebagai cadangan logika (tersembunyi secara visual)
+           } else {
+             $('#btnBack').hidden = false; // Sebagai cadangan logika (tersembunyi secara visual)
            }
         });
       }
