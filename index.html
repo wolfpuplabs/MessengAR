@@ -166,13 +166,7 @@
 </div>
 
 <!-- A-FRAME SCENE -->
-<!-- 
-  Perbaikan Bug iOS Layar Putih:
-  Alih-alih menggunakan 'display: none', kita gunakan 'visibility: hidden' dan z-index agar 
-  A-Frame tetap bisa menginisialisasi WebGL Canvas dengan ukuran yang benar sejak awal.
--->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
-  <!-- MODIFIKASI: Menghapus dom-overlay agar tidak freeze di WebXR Viewer -->
   <a-scene 
     webxr="optionalFeatures: hit-test"
     renderer="colorManagement: true"
@@ -215,12 +209,12 @@
           position="0 0 0">
         </a-entity>
         
-        <!-- TAMBAHAN: Tombol 3D Balas/Kembali -->
+        <!-- Tombol 3D Balas/Kembali -->
         <a-entity 
           id="dragon-action-btn"
-          geometry="primitive: plane; width: 2.2; height: 0.4"
+          geometry="primitive: plane; width: 1.5; height: 0.4"
           material="color: #45a29e; shader: flat; transparent: true; opacity: 0.9"
-          text="value: TAP LAYAR UNTUK BALAS; font: roboto; align: center; width: 2; color: #ffffff; wrapCount: 20"
+          text="value: REPLY; font: roboto; align: center; width: 3; color: #ffffff; wrapCount: 15"
           position="0 -0.8 0"
           visible="false">
         </a-entity>
@@ -397,6 +391,26 @@
   }
 
   /* ================= WEBXR HIT-TEST ================= */
+  
+  // SOLUSI iPAD: Deteksi manual sentuhan ke layar secara global (mengatasi 'select' yang tidak terbaca WebXR Viewer)
+  window.addEventListener('touchstart', (e) => {
+    const scene = document.querySelector('a-scene');
+    if (scene && scene.is('ar-mode')) {
+      // 1. Cek tombol aksi
+      const actionBtn = document.getElementById('dragon-action-btn');
+      if (actionBtn && actionBtn.getAttribute('visible')) {
+        if (replyAllowed) $('#btnReply').click();
+        else $('#btnBack').click();
+        return; 
+      }
+      // 2. Cek cincin penanda (reticle)
+      const reticle = document.getElementById('reticle');
+      if (reticle && reticle.getAttribute('visible')) {
+        $('#btnPlace').click();
+      }
+    }
+  });
+
   AFRAME.registerComponent('webxr-hit-test', {
     init: function () {
       this.xrHitTestSource = null;
@@ -406,9 +420,8 @@
       this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
         
-        // MODIFIKASI: Deteksi tap layar untuk penempatan Naga DAN klik Tombol 3D
+        // Deteksi tap layar bawaan WebXR (Untuk HP Android)
         session.addEventListener('select', () => {
-          // 1. Cek apakah tombol 3D sedang tampil (mode baca pesan selesai)
           const actionBtn = document.getElementById('dragon-action-btn');
           if (actionBtn && actionBtn.getAttribute('visible')) {
             if (replyAllowed) {
@@ -416,10 +429,8 @@
             } else {
               $('#btnBack').click();
             }
-            return; // Hentikan fungsi di sini agar naga tidak berpindah
+            return; 
           }
-
-          // 2. Jika tombol belum muncul, tap layar berfungsi untuk menempatkan naga
           const reticle = document.getElementById('reticle');
           if (reticle.getAttribute('visible')) {
             $('#btnPlace').click();
@@ -474,18 +485,14 @@
     currentPayload = payload;
     replyAllowed = payload && payload.from && payload.from !== myName;
     
-    // Tampilkan layer AR
     $('#screen-chat').hidden = true;
     
-    // Munculkan AR Wrapper
     const wrapper = $('#scene-wrapper');
     wrapper.style.visibility = 'visible';
     wrapper.style.zIndex = '100';
     
-    // Menampilkan kontainer (meski tombol di dalamnya takkan bisa di-klik saat di iPad)
     $('#ar-ui-container').hidden = false;
     
-    // Reset State
     $('#dragon-entity').setAttribute('visible', 'false');
     $('#dragon-bubble').setAttribute('visible', 'false');
     $('#dragon-action-btn').setAttribute('visible', 'false');
@@ -518,34 +525,35 @@
       $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        // Tampilkan Teks 3D
         textEl.setAttribute('text', 'value', currentPayload.text);
         bubble.setAttribute('visible', 'true');
         
         speakAndPlay(currentPayload, () => {
-           // Tampilkan Tombol 3D setelah suara/animasi selesai
            const actionBtn = document.getElementById('dragon-action-btn');
            if (replyAllowed) {
-             actionBtn.setAttribute('text', 'value', 'TAP LAYAR UNTUK BALAS');
+             actionBtn.setAttribute('text', 'value', 'REPLY');
              actionBtn.setAttribute('material', 'color', '#45a29e');
            } else {
-             actionBtn.setAttribute('text', 'value', 'TAP LAYAR UNTUK KEMBALI');
+             actionBtn.setAttribute('text', 'value', 'BACK');
              actionBtn.setAttribute('material', 'color', '#e33333');
            }
            actionBtn.setAttribute('visible', 'true');
            
-           if (replyAllowed) {
-             $('#btnReply').hidden = false; // Sebagai cadangan logika (tersembunyi secara visual)
-           } else {
-             $('#btnBack').hidden = false; // Sebagai cadangan logika (tersembunyi secara visual)
-           }
+           if (replyAllowed) $('#btnReply').hidden = false;
+           else $('#btnBack').hidden = false; 
         });
       }
     }
   };
 
-  // Saat keluar AR, sembunyikan kembali layer 3D
-  document.querySelector('a-scene').addEventListener('exit-vr', function () {
+  // SOLUSI BLANK PUTIH: Tutup AR secara paksa dari sistem kita, jangan mengandalkan event exit-vr
+  const closeAR = () => { 
+    const scene = document.querySelector('a-scene');
+    if (scene && scene.is('ar-mode')) {
+      try { scene.exitVR(); } catch(e) {}
+    }
+    
+    // Matikan suara dan sembunyikan kanvas 3D SEGERA (tanpa tunggu loading)
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
     
@@ -555,9 +563,12 @@
     
     $('#ar-ui-container').hidden = true;
     $('#screen-chat').hidden = false;
-  });
+  };
 
-  const closeAR = () => { document.querySelector('a-scene').exitVR(); };
+  // Kita tetap biarkan listener exit-vr ini sebagai cadangan kalau user menekan tombol "X" bawaan browser
+  document.querySelector('a-scene').addEventListener('exit-vr', function () {
+    closeAR(); 
+  });
 
   $('#btnBackAR').onclick = closeAR;
   $('#btnBack').onclick = closeAR;
