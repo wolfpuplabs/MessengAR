@@ -89,7 +89,7 @@
   <header>
     <span style="width:44px"></span>
     <h1 class="logo">Stick-AR</h1>
-    <button id="btnName" class="iconbtn" title="Ganti Nama">â</button>
+    <button id="btnName" class="iconbtn" title="Ganti Nama">✎</button>
   </header>
   <div id="msgs"></div>
   
@@ -97,13 +97,13 @@
     <!-- Banner Reply -->
     <div id="replyBanner" hidden>
       <span id="replyLabel"></span>
-      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;" id="btnCancelReply">â</button>
+      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;" id="btnCancelReply">✕</button>
     </div>
     
     <div class="composer-inputs">
-      <button id="btnMic" class="iconbtn" title="Rekam Suara">ð¤</button>
+      <button id="btnMic" class="iconbtn" title="Rekam Suara">🎤</button>
       <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
-      <button id="btnSend" class="primary-btn">Kirim ð</button>
+      <button id="btnSend" class="primary-btn">Kirim 🐉</button>
     </div>
   </div>
 </div>
@@ -111,13 +111,13 @@
 <!-- SHARE MODAL -->
 <div id="screen-share" class="screen overlay" hidden>
   <div class="glass-panel">
-    <h2>Naga Siap Terbang! ð</h2>
+    <h2>Naga Siap Terbang! 🐉</h2>
     <p>Bagikan link ini ke penerima. Saat dibuka, naga laut akan muncul di AR mengantar pesanmu.</p>
     <div id="shareLink"></div>
     <div class="row">
       <button id="btnShare" class="primary-btn">Share</button>
       <button id="btnCopy" class="primary-btn">Copy</button>
-      <button id="btnShareBack" class="iconbtn">â</button>
+      <button id="btnShareBack" class="iconbtn">✕</button>
     </div>
   </div>
 </div>
@@ -127,7 +127,7 @@
   <div class="glass-panel">
     <h2>Courier Tiba!</h2>
     <p id="incFrom"></p>
-    <button id="btnAccept" class="primary-btn">Buka di AR ðï¸</button>
+    <button id="btnAccept" class="primary-btn">Buka di AR 👁️</button>
     <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%;">Tutup</button>
   </div>
 </div>
@@ -138,7 +138,7 @@
     <h2>Selamat Datang</h2>
     <p>Masukkan nama kamu sebagai pengirim:</p>
     <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center;">
-    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai â¨</button>
+    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai ✨</button>
   </div>
 </div>
 
@@ -151,7 +151,7 @@
 <!-- WEBXR DOM OVERLAY UI -->
 <div id="ar-ui-container" hidden>
   <div class="ar-top">
-    <button id="btnBackAR" class="iconbtn">â¹</button>
+    <button id="btnBackAR" class="iconbtn">‹</button>
     <h1 class="logo">Stick-AR</h1>
     <span style="width:44px"></span>
   </div>
@@ -172,8 +172,9 @@
   A-Frame tetap bisa menginisialisasi WebGL Canvas dengan ukuran yang benar sejak awal.
 -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
+  <!-- MODIFIKASI: Menghapus dom-overlay agar tidak freeze di WebXR Viewer -->
   <a-scene 
-    webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
+    webxr="optionalFeatures: hit-test"
     renderer="colorManagement: true"
     vr-mode-ui="enabled: false"
     transparent="true">
@@ -212,6 +213,16 @@
           id="dragon-text" 
           text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
           position="0 0 0">
+        </a-entity>
+        
+        <!-- TAMBAHAN: Tombol 3D Balas/Kembali -->
+        <a-entity 
+          id="dragon-action-btn"
+          geometry="primitive: plane; width: 2.2; height: 0.4"
+          material="color: #45a29e; shader: flat; transparent: true; opacity: 0.9"
+          text="value: TAP LAYAR UNTUK BALAS; font: roboto; align: center; width: 2; color: #ffffff; wrapCount: 20"
+          position="0 -0.8 0"
+          visible="false">
         </a-entity>
         
       </a-entity>
@@ -258,7 +269,7 @@
       const d = document.createElement('div');
       if (m.kind === 'event') {
         d.className = 'event'; d.dataset.i = i;
-        d.textContent = m.text + ' â Tap untuk lihat AR';
+        d.textContent = m.text + ' — Tap untuk lihat AR';
       } else {
         d.className = 'bub ' + (m.dir === 'out' ? 'out' : 'in');
         let html = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + m.text;
@@ -306,14 +317,14 @@
       mRec.onstop = () => {
         st.getTracks().forEach(t => t.stop());
         const r = new FileReader();
-        r.onload = () => { pendingAudio = r.result; toast('ð¤ Suara terlampir'); };
+        r.onload = () => { pendingAudio = r.result; toast('🎤 Suara terlampir'); };
         r.readAsDataURL(new Blob(ch, { type: mRec.mimeType }));
         mRec = null; 
         $('#btnMic').classList.remove('mic-on');
       };
       mRec.start(); 
       $('#btnMic').classList.add('mic-on'); 
-      toast('Merekam... tap ð¤ untuk stop');
+      toast('Merekam... tap 🎤 untuk stop');
       setTimeout(() => { if (mRec) mRec.stop() }, 10000);
     }).catch(() => toast('Mic tidak diizinkan'));
   };
@@ -394,6 +405,27 @@
 
       this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
+        
+        // MODIFIKASI: Deteksi tap layar untuk penempatan Naga DAN klik Tombol 3D
+        session.addEventListener('select', () => {
+          // 1. Cek apakah tombol 3D sedang tampil (mode baca pesan selesai)
+          const actionBtn = document.getElementById('dragon-action-btn');
+          if (actionBtn && actionBtn.getAttribute('visible')) {
+            if (replyAllowed) {
+              $('#btnReply').click();
+            } else {
+              $('#btnBack').click();
+            }
+            return; // Hentikan fungsi di sini agar naga tidak berpindah
+          }
+
+          // 2. Jika tombol belum muncul, tap layar berfungsi untuk menempatkan naga
+          const reticle = document.getElementById('reticle');
+          if (reticle.getAttribute('visible')) {
+            $('#btnPlace').click();
+          }
+        });
+
         session.requestReferenceSpace('viewer').then((space) => {
           this.viewerSpace = space;
           session.requestHitTestSource({ space: this.viewerSpace }).then((hitTestSource) => {
@@ -423,7 +455,7 @@
             
             if ($('#dragon-entity').getAttribute('visible') === false) {
                 $('#btnPlace').hidden = false;
-                $('#arHint').textContent = "Lantai ditemukan! Tap Panggil Naga.";
+                $('#arHint').textContent = "Lantai ditemukan! Sentuh layar untuk panggil Naga.";
             }
           } else {
              document.getElementById('reticle').setAttribute('visible', 'false');
@@ -450,11 +482,13 @@
     wrapper.style.visibility = 'visible';
     wrapper.style.zIndex = '100';
     
+    // Menampilkan kontainer (meski tombol di dalamnya takkan bisa di-klik saat di iPad)
     $('#ar-ui-container').hidden = false;
     
     // Reset State
     $('#dragon-entity').setAttribute('visible', 'false');
     $('#dragon-bubble').setAttribute('visible', 'false');
+    $('#dragon-action-btn').setAttribute('visible', 'false');
     $('#arMessageAudio').pause();
     window.speechSynthesis.cancel(); 
     
@@ -489,10 +523,21 @@
         bubble.setAttribute('visible', 'true');
         
         speakAndPlay(currentPayload, () => {
+           // Tampilkan Tombol 3D setelah suara/animasi selesai
+           const actionBtn = document.getElementById('dragon-action-btn');
            if (replyAllowed) {
-             $('#btnReply').hidden = false;
+             actionBtn.setAttribute('text', 'value', 'TAP LAYAR UNTUK BALAS');
+             actionBtn.setAttribute('material', 'color', '#45a29e');
            } else {
-             $('#btnBack').hidden = false;
+             actionBtn.setAttribute('text', 'value', 'TAP LAYAR UNTUK KEMBALI');
+             actionBtn.setAttribute('material', 'color', '#e33333');
+           }
+           actionBtn.setAttribute('visible', 'true');
+           
+           if (replyAllowed) {
+             $('#btnReply').hidden = false; // Sebagai cadangan logika (tersembunyi secara visual)
+           } else {
+             $('#btnBack').hidden = false; // Sebagai cadangan logika (tersembunyi secara visual)
            }
         });
       }
