@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Stick-AR Courier (WebXR)</title>
 
-  <!-- A-Frame -->
+  <!-- A-Frame Murni -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
 
   <style>
@@ -70,20 +70,31 @@
     /* AR DOM OVERLAY UI */
     #ar-ui-container { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
     .ar-top { display: flex; justify-content: space-between; pointer-events: auto; }
-    #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; align-self: center; margin-top: 20px;}
-    
-    /* Popup Chat di AR (Menggantikan Plane 3D) */
-    #arMessagePopup {
-      pointer-events: auto;
-      margin-top: 20px;
-      text-align: left;
-      max-height: 50vh;
-      overflow-y: auto;
-    }
-    #arMessageText { font-size: 16px; word-wrap: break-word; color: #fff; line-height: 1.5; }
-    
+    #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none;}
     #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
     
+    /* BUBBLE TRACKER (Melayang di AR) */
+    #arMessagePopup {
+      position: absolute;
+      transform: translate(-50%, -100%);
+      pointer-events: auto;
+      text-align: center;
+      max-width: 85%;
+      width: max-content;
+      z-index: 100;
+      background: rgba(22, 26, 32, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(102, 252, 241, 0.4);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      transition: opacity 0.1s;
+    }
+    #arMessagePopup h3 { margin-top: 0; color: #66fcf1; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
+    #arMessageText { font-size: 15px; word-wrap: break-word; white-space: normal; color: #fff; line-height: 1.4; margin: 0; }
+    #arMessageAudio { width: 100%; margin-top: 12px; height: 36px; outline: none; }
+
     #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.9); border: 1px solid #45a29e; border-radius: 999px; padding: 10px 20px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
   </style>
 </head>
@@ -141,7 +152,7 @@
 <!-- TOAST -->
 <div id="toast" hidden></div>
 
-<!-- WEBXR AR SCENE -->
+<!-- WEBXR DOM OVERLAY UI -->
 <div id="ar-ui-container" hidden>
   <div class="ar-top">
     <button id="btnBackAR" class="iconbtn">‹</button>
@@ -149,11 +160,11 @@
     <span style="width:44px"></span>
   </div>
   
-  <!-- Popup Teks AR Berbasis HTML (Bukan Plane 3D) -->
-  <div id="arMessagePopup" class="glass-panel" hidden>
-    <h3 style="margin-top:0; color:#66fcf1; font-size:14px; text-transform:uppercase;">Pesan Diterima</h3>
+  <!-- Popup Chat di AR (Berbasis HTML agar teks rapi dan bisa scroll) -->
+  <div id="arMessagePopup" hidden>
+    <h3>Pesan Diterima</h3>
     <p id="arMessageText"></p>
-    <audio id="arMessageAudio" controls hidden style="width: 100%; margin-top: 10px;"></audio>
+    <audio id="arMessageAudio" controls hidden></audio>
   </div>
 
   <div id="arHint">Pindai lantai hingga cincin putih muncul.</div>
@@ -164,16 +175,19 @@
   </div>
 </div>
 
-<!-- Scene A-Frame disembunyikan saat tidak digunakan agar tidak freeze -->
+<!-- A-FRAME SCENE -->
+<!-- Dibungkus di dalam div yang akan di-hidden saat kembali ke chat untuk mencegah freeze -->
 <div id="scene-wrapper" hidden>
+  <!-- vr-mode-ui di disable agar A-Frame tidak menyembunyikan tombol custom kita -->
   <a-scene 
     webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
     renderer="colorManagement: true"
-    vr-mode-ui="enterVRButton: #btnAccept" 
+    vr-mode-ui="enabled: false"
+    bubble-tracker
     style="position: absolute; inset: 0; z-index: 1;">
     
     <a-assets>
-      <!-- Ekstensi diubah menjadi .glb -->
+      <!-- Format diubah ke .glb sesuai permintaan -->
       <a-asset-item id="dragon-model" src="dragon.glb"></a-asset-item>
     </a-assets>
 
@@ -182,9 +196,10 @@
     <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
     <a-light type="ambient" intensity="0.6"></a-light>
 
+    <!-- Hit Test Component -->
     <a-entity id="xr-manager" webxr-hit-test></a-entity>
 
-    <!-- Reticle -->
+    <!-- Reticle (Cincin Lantai) -->
     <a-entity id="reticle" visible="false">
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
@@ -280,7 +295,7 @@
       mRec.start(); 
       $('#btnMic').classList.add('mic-on'); 
       toast('Merekam... tap 🎤 untuk stop');
-      setTimeout(() => { if (mRec) mRec.stop() }, 10000); // Max 10 detik
+      setTimeout(() => { if (mRec) mRec.stop() }, 10000);
     }).catch(() => toast('Mic tidak diizinkan'));
   };
 
@@ -322,6 +337,8 @@
   });
 
   $('#btnIncLater').onclick = () => $('#screen-incoming').hidden = true;
+  
+  // Tombol Buka AR sekarang dipaksa manual (tidak di-hijack A-Frame)
   $('#btnAccept').onclick = () => {
     $('#screen-incoming').hidden = true;
     if (currentPayload && currentPayload.from !== myName && !msgs.some(m => m.payload && m.payload.id === currentPayload.id)) {
@@ -332,35 +349,66 @@
     openAR(currentPayload);
   };
 
-  /* ================= TTS & AUDIO PLAYBACK ================= */
+  /* ================= BUBBLE TRACKER & AUDIO ================= */
+  // Memproyeksikan posisi Naga 3D ke Layar 2D agar UI menempel
+  AFRAME.registerComponent('bubble-tracker', {
+    tick: function () {
+      const dragon = document.getElementById('dragon-entity');
+      const bubble = document.getElementById('arMessagePopup');
+      
+      if (dragon && dragon.getAttribute('visible') && !bubble.hidden) {
+        const camera = this.el.camera;
+        if (!camera) return;
+        
+        const v = new THREE.Vector3();
+        dragon.object3D.getWorldPosition(v);
+        v.y += 0.6; // Offset tinggi bubble dari naga
+        v.project(camera);
+        
+        const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+        const y = (-(v.y * 0.5) + 0.5) * window.innerHeight;
+        
+        // Sembunyikan bubble jika naga tidak di depan kamera
+        if (v.z > 1) {
+          bubble.style.opacity = 0;
+          bubble.style.pointerEvents = 'none';
+        } else {
+          bubble.style.opacity = 1;
+          bubble.style.pointerEvents = 'auto';
+          bubble.style.left = x + 'px';
+          bubble.style.top = y + 'px';
+        }
+      }
+    }
+  });
+
   function speakAndPlay(payload, onFinish) {
+    const audioEl = $('#arMessageAudio');
     if (payload.audio) {
-      const audioEl = $('#arMessageAudio');
       audioEl.src = payload.audio;
       audioEl.hidden = false;
-      audioEl.play().catch(() => {});
+      audioEl.play().catch(() => toast('Tap icon play untuk mendengar suara'));
       audioEl.onended = onFinish;
     } else if ('speechSynthesis' in window) {
+      audioEl.hidden = true;
       const u = new SpeechSynthesisUtterance(payload.text);
-      u.lang = 'id-ID';
-      u.pitch = 1.2;
-      u.rate = 1.0;
-      u.onend = onFinish;
-      u.onerror = onFinish;
+      u.lang = 'id-ID'; u.pitch = 1.2; u.rate = 1.0;
+      u.onend = onFinish; u.onerror = onFinish;
       speechSynthesis.speak(u);
     } else {
+      audioEl.hidden = true;
       setTimeout(onFinish, 2000);
     }
   }
 
-  /* ================= WEBXR HIT-TEST COMPONENT ================= */
+  /* ================= WEBXR HIT-TEST ================= */
   AFRAME.registerComponent('webxr-hit-test', {
     init: function () {
       this.xrHitTestSource = null;
       this.viewerSpace = null;
       this.refSpace = null;
 
-      this.el.sceneEl.renderer.xr.addEventListener('sessionstart', (ev) => {
+      this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
         session.requestReferenceSpace('viewer').then((space) => {
           this.viewerSpace = space;
@@ -410,24 +458,26 @@
     currentPayload = payload;
     $('.screen').hidden = true;
     
-    // Tampilkan wrapper A-Frame dan container UI-nya
+    // Buka wrapper A-Frame
     $('#scene-wrapper').hidden = false;
     $('#ar-ui-container').hidden = false;
     
-    // Reset State
+    // Reset Data
     $('#dragon-entity').setAttribute('visible', 'false');
     $('#arMessagePopup').hidden = true;
     $('#arMessageAudio').hidden = true;
     $('#arMessageAudio').pause();
-    window.speechSynthesis.cancel(); // Stop TTS sebelumnya
+    window.speechSynthesis.cancel(); 
     
     $('#btnPlace').hidden = true;
     $('#btnReply').hidden = true;
     $('#arHint').hidden = false;
     $('#arHint').textContent = "Memuat AR...";
 
-    // Masuk ke VR/AR Mode
-    document.querySelector('a-scene').enterVR();
+    // Masuk AR secara manual
+    const scene = document.querySelector('a-scene');
+    if (scene.hasLoaded) { scene.enterAR(); } 
+    else { scene.addEventListener('loaded', () => scene.enterAR()); }
   }
 
   $('#btnPlace').onclick = () => {
@@ -435,20 +485,17 @@
     const dragon = document.getElementById('dragon-entity');
 
     if (reticle.getAttribute('visible')) {
-      // Pindahkan naga ke posisi reticle
       dragon.setAttribute('position', reticle.getAttribute('position'));
       dragon.setAttribute('visible', 'true');
       reticle.setAttribute('visible', 'false');
       
       $('#btnPlace').hidden = true;
-      $('#arHint').hidden = true; // Sembunyikan hint
+      $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        // Tampilkan teks menggunakan DOM Overlay (Bukan Plane 3D)
         $('#arMessageText').textContent = currentPayload.text;
         $('#arMessagePopup').hidden = false;
         
-        // Putar audio / TTS
         speakAndPlay(currentPayload, () => {
            $('#btnReply').hidden = false;
         });
@@ -456,21 +503,17 @@
     }
   };
 
-  // FUNGSI UNTUK MENCEGAH FREEZE: Dengarkan event exit-vr bawaan A-Frame
+  // Mencegah Freeze dengan mematikan A-Frame sepenuhnya saat keluar AR
   document.querySelector('a-scene').addEventListener('exit-vr', function () {
-    window.speechSynthesis.cancel(); // Hentikan suara jika user tiba-tiba keluar
+    window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
     
-    // Sembunyikan scene A-Frame sepenuhnya agar tidak berat/freeze di background
     $('#scene-wrapper').hidden = true;
     $('#ar-ui-container').hidden = true;
     $('#screen-chat').hidden = false;
   });
 
-  const closeAR = () => {
-    // Ini akan memicu event 'exit-vr' di atas
-    document.querySelector('a-scene').exitVR(); 
-  };
+  const closeAR = () => { document.querySelector('a-scene').exitVR(); };
 
   $('#btnBackAR').onclick = closeAR;
   $('#btnReply').onclick = closeAR;
