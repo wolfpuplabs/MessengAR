@@ -173,6 +173,7 @@
     style="position: absolute; inset: 0; z-index: 1;">
     
     <a-assets>
+      <!-- Ekstensi diubah menjadi .glb -->
       <a-asset-item id="dragon-model" src="dragon.glb"></a-asset-item>
     </a-assets>
 
@@ -434,6 +435,7 @@
     const dragon = document.getElementById('dragon-entity');
 
     if (reticle.getAttribute('visible')) {
+      // Pindahkan naga ke posisi reticle
       dragon.setAttribute('position', reticle.getAttribute('position'));
       dragon.setAttribute('visible', 'true');
       reticle.setAttribute('visible', 'false');
