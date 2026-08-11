@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Stick-AR Courier (WebXR)</title>
 
-  <!-- A-Frame Murni -->
+  <!-- A-Frame Murni & Look-At Component untuk 3D Text -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
 
   <style>
     /* ============ UI/UX REDESIGN: GLASSMORPHISM ============ */
@@ -54,9 +55,12 @@
     .in { align-self: flex-start; background: #202428; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
     .event { align-self: center; background: rgba(69, 162, 158, 0.15); border: 1px dashed #45a29e; border-radius: 999px; padding: 8px 16px; font-size: 12px; cursor: pointer; color: #66fcf1; }
     
-    .composer { display: flex; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.9); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+    .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.9); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+    .composer-inputs { display: flex; gap: 10px; }
     #txt { flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px; background: #1f2833; color: #fff; font-size: 15px; outline: none; }
     #txt:focus { border-color: #45a29e; }
+    
+    #replyBanner { padding: 8px 16px; background: #2f6f5f; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px; color: #fff; }
     
     .mic-on { background: #e33 !important; color: #fff !important; animation: pulse 1s infinite; }
     @keyframes pulse { 50% { transform: scale(1.12); } }
@@ -73,28 +77,6 @@
     #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none;}
     #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
     
-    /* BUBBLE TRACKER (Melayang di AR) */
-    #arMessagePopup {
-      position: absolute;
-      transform: translate(-50%, -100%);
-      pointer-events: auto;
-      text-align: center;
-      max-width: 85%;
-      width: max-content;
-      z-index: 100;
-      background: rgba(22, 26, 32, 0.85);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(102, 252, 241, 0.4);
-      border-radius: 20px;
-      padding: 16px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-      transition: opacity 0.1s;
-    }
-    #arMessagePopup h3 { margin-top: 0; color: #66fcf1; font-size: 12px; text-transform: uppercase; margin-bottom: 8px; }
-    #arMessageText { font-size: 15px; word-wrap: break-word; white-space: normal; color: #fff; line-height: 1.4; margin: 0; }
-    #arMessageAudio { width: 100%; margin-top: 12px; height: 36px; outline: none; }
-
     #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.9); border: 1px solid #45a29e; border-radius: 999px; padding: 10px 20px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
   </style>
 </head>
@@ -108,10 +90,19 @@
     <button id="btnName" class="iconbtn" title="Ganti Nama">✎</button>
   </header>
   <div id="msgs"></div>
+  
   <div class="composer">
-    <button id="btnMic" class="iconbtn" title="Rekam Suara">🎤</button>
-    <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
-    <button id="btnSend" class="primary-btn">Kirim 🐉</button>
+    <!-- Banner Reply -->
+    <div id="replyBanner" hidden>
+      <span id="replyLabel"></span>
+      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;" id="btnCancelReply">✕</button>
+    </div>
+    
+    <div class="composer-inputs">
+      <button id="btnMic" class="iconbtn" title="Rekam Suara">🎤</button>
+      <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
+      <button id="btnSend" class="primary-btn">Kirim 🐉</button>
+    </div>
   </div>
 </div>
 
@@ -152,6 +143,9 @@
 <!-- TOAST -->
 <div id="toast" hidden></div>
 
+<!-- AUDIO UTILITY (Hidden) -->
+<audio id="arMessageAudio" hidden></audio>
+
 <!-- WEBXR DOM OVERLAY UI -->
 <div id="ar-ui-container" hidden>
   <div class="ar-top">
@@ -159,35 +153,25 @@
     <h1 class="logo">Stick-AR</h1>
     <span style="width:44px"></span>
   </div>
-  
-  <!-- Popup Chat di AR (Berbasis HTML agar teks rapi dan bisa scroll) -->
-  <div id="arMessagePopup" hidden>
-    <h3>Pesan Diterima</h3>
-    <p id="arMessageText"></p>
-    <audio id="arMessageAudio" controls hidden></audio>
-  </div>
 
   <div id="arHint">Pindai lantai hingga cincin putih muncul.</div>
   
   <div id="arBtns">
     <button id="btnPlace" class="primary-btn" hidden>Panggil Naga</button>
-    <button id="btnReply" class="primary-btn" hidden>Kembali ke Chat</button>
+    <button id="btnReply" class="primary-btn" hidden>Balas Pesan</button>
+    <button id="btnBack" class="primary-btn" hidden>Kembali</button>
   </div>
 </div>
 
 <!-- A-FRAME SCENE -->
-<!-- Dibungkus di dalam div yang akan di-hidden saat kembali ke chat untuk mencegah freeze -->
 <div id="scene-wrapper" hidden>
-  <!-- vr-mode-ui di disable agar A-Frame tidak menyembunyikan tombol custom kita -->
   <a-scene 
     webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
     renderer="colorManagement: true"
     vr-mode-ui="enabled: false"
-    bubble-tracker
     style="position: absolute; inset: 0; z-index: 1;">
     
     <a-assets>
-      <!-- Format diubah ke .glb sesuai permintaan -->
       <a-asset-item id="dragon-model" src="dragon.glb"></a-asset-item>
     </a-assets>
 
@@ -196,10 +180,8 @@
     <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
     <a-light type="ambient" intensity="0.6"></a-light>
 
-    <!-- Hit Test Component -->
     <a-entity id="xr-manager" webxr-hit-test></a-entity>
 
-    <!-- Reticle (Cincin Lantai) -->
     <a-entity id="reticle" visible="false">
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
@@ -211,6 +193,29 @@
       scale="0.5 0.5 0.5" 
       visible="false"
       animation-mixer="clip: *">
+      
+      <!-- 3D Text Bubble Melayang di Atas Naga (Menghadap Kamera) -->
+      <a-entity 
+        id="dragon-bubble"
+        position="0 2.5 0"
+        look-at="[camera]"
+        visible="false">
+        
+        <!-- Background Plane -->
+        <a-entity 
+          geometry="primitive: plane; width: 2.5; height: 1.2" 
+          material="color: #1f2833; transparent: true; opacity: 0.85; shader: flat" 
+          position="0 0 -0.01">
+        </a-entity>
+        
+        <!-- Teks dengan Word Wrap -->
+        <a-entity 
+          id="dragon-text" 
+          text="value: ...; font: roboto; align: center; width: 2.3; wrapCount: 28; color: #66fcf1; lineHeight: 50" 
+          position="0 0 0">
+        </a-entity>
+        
+      </a-entity>
     </a-entity>
   </a-scene>
 </div>
@@ -234,6 +239,8 @@
   let currentPayload = null;
   let pendingAudio = null;
   let lastShare = '';
+  let replyTo = null;
+  let replyAllowed = false;
 
   /* ================= UI LOGIC ================= */
   function saveName() {
@@ -274,6 +281,19 @@
     if (m && m.payload) openAR(m.payload);
   });
 
+  /* ================= REPLY LOGIC ================= */
+  function setReply(name) {
+    replyTo = name;
+    $('#replyBanner').hidden = !name;
+    if (name) {
+      $('#replyLabel').textContent = 'Membalas ke ' + name;
+      $('#txt').placeholder = 'Balas ke ' + name + '...';
+    } else {
+      $('#txt').placeholder = 'Ketik pesan...';
+    }
+  }
+  $('#btnCancelReply').onclick = () => setReply(null);
+
   /* ================= AUDIO RECORDING ================= */
   let mRec = null;
   $('#btnMic').onclick = () => {
@@ -304,8 +324,8 @@
     const text = $('#txt').value.trim();
     if (!text && !pendingAudio) return toast('Ketik pesan atau rekam suara dulu');
     
-    const payload = { v: 1, id: uid(), from: myName, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
-    msgs.push({ kind: 'event', dir: 'out', text: 'Naga dikirim', payload, t: Date.now() });
+    const payload = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
+    msgs.push({ kind: 'event', dir: 'out', text: 'Naga dikirim' + (payload.to ? ' ke ' + payload.to : ''), payload, t: Date.now() });
     store.set('sar_msgs', JSON.stringify(msgs));
     renderMsgs();
     
@@ -315,6 +335,7 @@
     $('#txt').value = '';
     pendingAudio = null;
     $('#btnMic').classList.remove('mic-on');
+    setReply(null); // Reset reply state
   };
 
   $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
@@ -338,7 +359,6 @@
 
   $('#btnIncLater').onclick = () => $('#screen-incoming').hidden = true;
   
-  // Tombol Buka AR sekarang dipaksa manual (tidak di-hijack A-Frame)
   $('#btnAccept').onclick = () => {
     $('#screen-incoming').hidden = true;
     if (currentPayload && currentPayload.from !== myName && !msgs.some(m => m.payload && m.payload.id === currentPayload.id)) {
@@ -349,54 +369,19 @@
     openAR(currentPayload);
   };
 
-  /* ================= BUBBLE TRACKER & AUDIO ================= */
-  // Memproyeksikan posisi Naga 3D ke Layar 2D agar UI menempel
-  AFRAME.registerComponent('bubble-tracker', {
-    tick: function () {
-      const dragon = document.getElementById('dragon-entity');
-      const bubble = document.getElementById('arMessagePopup');
-      
-      if (dragon && dragon.getAttribute('visible') && !bubble.hidden) {
-        const camera = this.el.camera;
-        if (!camera) return;
-        
-        const v = new THREE.Vector3();
-        dragon.object3D.getWorldPosition(v);
-        v.y += 0.6; // Offset tinggi bubble dari naga
-        v.project(camera);
-        
-        const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-(v.y * 0.5) + 0.5) * window.innerHeight;
-        
-        // Sembunyikan bubble jika naga tidak di depan kamera
-        if (v.z > 1) {
-          bubble.style.opacity = 0;
-          bubble.style.pointerEvents = 'none';
-        } else {
-          bubble.style.opacity = 1;
-          bubble.style.pointerEvents = 'auto';
-          bubble.style.left = x + 'px';
-          bubble.style.top = y + 'px';
-        }
-      }
-    }
-  });
-
+  /* ================= TTS & AUDIO PLAYBACK ================= */
   function speakAndPlay(payload, onFinish) {
     const audioEl = $('#arMessageAudio');
     if (payload.audio) {
       audioEl.src = payload.audio;
-      audioEl.hidden = false;
-      audioEl.play().catch(() => toast('Tap icon play untuk mendengar suara'));
+      audioEl.play().catch(() => toast('Izin audio diblokir perangkat'));
       audioEl.onended = onFinish;
     } else if ('speechSynthesis' in window) {
-      audioEl.hidden = true;
       const u = new SpeechSynthesisUtterance(payload.text);
       u.lang = 'id-ID'; u.pitch = 1.2; u.rate = 1.0;
       u.onend = onFinish; u.onerror = onFinish;
       speechSynthesis.speak(u);
     } else {
-      audioEl.hidden = true;
       setTimeout(onFinish, 2000);
     }
   }
@@ -456,25 +441,23 @@
   /* ================= AR LOGIC ================= */
   function openAR(payload) {
     currentPayload = payload;
-    $('.screen').hidden = true;
+    replyAllowed = payload && payload.from && payload.from !== myName;
     
-    // Buka wrapper A-Frame
+    $('.screen').hidden = true;
     $('#scene-wrapper').hidden = false;
     $('#ar-ui-container').hidden = false;
     
-    // Reset Data
     $('#dragon-entity').setAttribute('visible', 'false');
-    $('#arMessagePopup').hidden = true;
-    $('#arMessageAudio').hidden = true;
+    $('#dragon-bubble').setAttribute('visible', 'false');
     $('#arMessageAudio').pause();
     window.speechSynthesis.cancel(); 
     
     $('#btnPlace').hidden = true;
     $('#btnReply').hidden = true;
+    $('#btnBack').hidden = true;
     $('#arHint').hidden = false;
     $('#arHint').textContent = "Memuat AR...";
 
-    // Masuk AR secara manual
     const scene = document.querySelector('a-scene');
     if (scene.hasLoaded) { scene.enterAR(); } 
     else { scene.addEventListener('loaded', () => scene.enterAR()); }
@@ -483,6 +466,8 @@
   $('#btnPlace').onclick = () => {
     const reticle = document.getElementById('reticle');
     const dragon = document.getElementById('dragon-entity');
+    const bubble = document.getElementById('dragon-bubble');
+    const textEl = document.getElementById('dragon-text');
 
     if (reticle.getAttribute('visible')) {
       dragon.setAttribute('position', reticle.getAttribute('position'));
@@ -493,17 +478,22 @@
       $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        $('#arMessageText').textContent = currentPayload.text;
-        $('#arMessagePopup').hidden = false;
+        // Tampilkan Teks 3D dengan Word Wrap (wrapCount: 28)
+        textEl.setAttribute('text', 'value', currentPayload.text);
+        bubble.setAttribute('visible', 'true');
         
         speakAndPlay(currentPayload, () => {
-           $('#btnReply').hidden = false;
+           if (replyAllowed) {
+             $('#btnReply').hidden = false;
+           } else {
+             $('#btnBack').hidden = false;
+           }
         });
       }
     }
   };
 
-  // Mencegah Freeze dengan mematikan A-Frame sepenuhnya saat keluar AR
+  // Bersihkan Memori Audio dan Balik ke Chat saat keluar dari AR
   document.querySelector('a-scene').addEventListener('exit-vr', function () {
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
@@ -516,7 +506,15 @@
   const closeAR = () => { document.querySelector('a-scene').exitVR(); };
 
   $('#btnBackAR').onclick = closeAR;
-  $('#btnReply').onclick = closeAR;
+  $('#btnBack').onclick = closeAR;
+  
+  $('#btnReply').onclick = () => {
+    if (replyAllowed) {
+      setReply(currentPayload.from);
+      toast('Membalas pesan ke ' + currentPayload.from);
+    }
+    closeAR();
+  };
 
   /* ================= BOOT ================= */
   renderMsgs();
