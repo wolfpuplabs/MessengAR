@@ -483,9 +483,8 @@
     renderMsgs();
     
     const longLink = baseLink() + '#m=' + enc(compactPayload);
-    lastShare = longLink; // Set default ke link panjang dulu
+    lastShare = longLink; 
     
-    // Tampilkan modal loading ke pengguna
     $('#shareLink').textContent = t.genLink;
     $('#screen-share').hidden = false;
     $('#txt').value = '';
@@ -493,7 +492,6 @@
     $('#btnMic').classList.remove('mic-on');
     setReply(null); 
     
-    // Proses pemendekan TinyURL
     try {
       const response = await fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longLink));
       if (response.ok) {
@@ -501,10 +499,9 @@
         lastShare = shortUrl;
       }
     } catch (err) {
-      console.warn("Gagal membuat TinyURL, sistem menggunakan link panjang sebagai cadangan.", err);
+      console.warn("Gagal membuat TinyURL, fallback ke link panjang.", err);
     }
     
-    // Tampilkan link final (pendek atau panjang jika gagal) ke layar pengguna
     $('#shareLink').textContent = lastShare;
   };
 
@@ -632,6 +629,15 @@
     tick: function () {
       if (this.el.sceneEl.is('ar-mode')) {
         if (!this.viewerSpace) return;
+        
+        // BUG FIX: Hentikan pemindaian lantai & sembunyikan reticle secara paksa jika kurir sudah muncul
+        const dragon = document.getElementById('dragon-entity');
+        const isDragonVisible = dragon.getAttribute('visible');
+        if (isDragonVisible === true || isDragonVisible === 'true') {
+          document.getElementById('reticle').setAttribute('visible', 'false');
+          return;
+        }
+
         let frame = this.el.sceneEl.frame;
         let xrViewerPose = frame.getViewerPose(this.refSpace);
 
@@ -643,16 +649,12 @@
             reticle.setAttribute('position', pose.transform.position);
             reticle.setAttribute('visible', 'true');
             
-            if ($('#dragon-entity').getAttribute('visible') === false) {
-                $('#btnPlace').hidden = false;
-                $('#arHint').textContent = i18n[lang].arHintFound;
-            }
+            $('#btnPlace').hidden = false;
+            $('#arHint').textContent = i18n[lang].arHintFound;
           } else {
              document.getElementById('reticle').setAttribute('visible', 'false');
-             if ($('#dragon-entity').getAttribute('visible') === false) {
-                $('#btnPlace').hidden = true;
-                $('#arHint').textContent = i18n[lang].arHintSearch;
-             }
+             $('#btnPlace').hidden = true;
+             $('#arHint').textContent = i18n[lang].arHintSearch;
           }
         }
       }
