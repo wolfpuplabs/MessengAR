@@ -87,7 +87,8 @@
 <!-- CHAT SCREEN -->
 <div id="screen-chat" class="screen">
   <header>
-    <span style="width:44px"></span>
+    <!-- FITUR BARU: Tombol Hapus Chat -->
+    <button id="btnClear" class="iconbtn" style="font-size: 16px;" title="Bersihkan Obrolan">🗑️</button>
     <h1 class="logo">Stick-AR</h1>
     <button id="btnName" class="iconbtn" title="Ganti Nama">✎</button>
   </header>
@@ -173,10 +174,6 @@
     vr-mode-ui="enabled: false"
     transparent="true">
     
-    <a-assets>
-      <a-asset-item id="dragon-model" src="dragon.glb"></a-asset-item>
-    </a-assets>
-
     <a-camera id="camera" position="0 1.6 0"></a-camera>
     
     <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
@@ -188,10 +185,14 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Naga Entity -->
+    <!-- 
+      SOLUSI iPAD 'Belum Ada Naga': 
+      Menghapus tag <a-assets> karena sistem pre-load A-Frame kadang macet di iOS. 
+      Menggunakan parameter 'url' secara langsung agar langsung diload saat dipanggil.
+    -->
     <a-entity 
       id="dragon-entity" 
-      gltf-model="#dragon-model" 
+      gltf-model="url(dragon.glb)" 
       scale="0.5 0.5 0.5" 
       visible="false"
       animation-mixer="clip: *">
@@ -209,7 +210,7 @@
           position="0 0 0">
         </a-entity>
         
-        <!-- Tombol 3D Balas/Kembali (Diperkecil) -->
+        <!-- Tombol 3D Balas/Kembali -->
         <a-entity 
           id="dragon-action-btn"
           geometry="primitive: plane; width: 1.0; height: 0.3"
@@ -256,6 +257,16 @@
   $('#btnNameSave').onclick = saveName;
   $('#btnName').onclick = () => { $('#nameInput').value = myName; $('#nameModal').hidden = false; };
   if (!myName) $('#nameModal').hidden = false;
+
+  // Hapus Chat Logic
+  $('#btnClear').onclick = () => {
+    if (confirm('Yakin ingin menghapus semua pesan?')) {
+      msgs = [];
+      store.set('sar_msgs', '[]');
+      renderMsgs();
+      toast('Obrolan dibersihkan 🧹');
+    }
+  };
 
   function renderMsgs() {
     const box = $('#msgs'); box.innerHTML = '';
@@ -392,18 +403,15 @@
 
   /* ================= WEBXR HIT-TEST ================= */
   
-  // SOLUSI iPAD: Deteksi manual sentuhan ke layar secara global (mengatasi 'select' yang tidak terbaca WebXR Viewer)
   window.addEventListener('touchstart', (e) => {
     const scene = document.querySelector('a-scene');
     if (scene && scene.is('ar-mode')) {
-      // 1. Cek tombol aksi
       const actionBtn = document.getElementById('dragon-action-btn');
       if (actionBtn && actionBtn.getAttribute('visible')) {
         if (replyAllowed) $('#btnReply').click();
         else $('#btnBack').click();
         return; 
       }
-      // 2. Cek cincin penanda (reticle)
       const reticle = document.getElementById('reticle');
       if (reticle && reticle.getAttribute('visible')) {
         $('#btnPlace').click();
@@ -420,7 +428,6 @@
       this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
         
-        // Deteksi tap layar bawaan WebXR (Untuk HP Android)
         session.addEventListener('select', () => {
           const actionBtn = document.getElementById('dragon-action-btn');
           if (actionBtn && actionBtn.getAttribute('visible')) {
@@ -443,7 +450,15 @@
             this.xrHitTestSource = hitTestSource;
           });
         });
-        session.requestReferenceSpace('local-floor').then((space) => { this.refSpace = space; });
+
+        // SOLUSI iPAD 'Belum Ada Naga': Fallback system jika lantai gagal dicari
+        session.requestReferenceSpace('local-floor').then((space) => { 
+          this.refSpace = space; 
+        }).catch(() => {
+          session.requestReferenceSpace('local').then((space) => {
+            this.refSpace = space;
+          });
+        });
       });
 
       this.el.sceneEl.renderer.xr.addEventListener('sessionend', () => {
@@ -534,8 +549,8 @@
              actionBtn.setAttribute('text', 'value', 'REPLY');
              actionBtn.setAttribute('material', 'color', '#45a29e');
            } else {
-             actionBtn.setAttribute('text', 'value', 'REPLY'); // Berubah dari "BACK" ke "REPLY"
-             actionBtn.setAttribute('material', 'color', '#1f2833'); // Warna abu-abu kebiruan gelap (bukan merah)
+             actionBtn.setAttribute('text', 'value', 'REPLY'); 
+             actionBtn.setAttribute('material', 'color', '#1f2833'); 
            }
            actionBtn.setAttribute('visible', 'true');
            
@@ -546,45 +561,45 @@
     }
   };
 
-  // SOLUSI BLANK PUTIH: Tutup AR secara paksa dari sistem kita, jangan mengandalkan event exit-vr
-  const closeAR = () => { 
+  // SOLUSI iPAD 'Layar Blank Putih': Gunakan metode Reload Paksa
+  const closeAR = (replyTarget = null) => { 
+    // Matikan suara & paksa keluar
+    window.speechSynthesis.cancel();
+    $('#arMessageAudio').pause();
+    
     const scene = document.querySelector('a-scene');
     if (scene && scene.is('ar-mode')) {
       try { scene.exitVR(); } catch(e) {}
     }
     
-    // Matikan suara dan sembunyikan kanvas 3D SEGERA (tanpa tunggu loading)
-    window.speechSynthesis.cancel();
-    $('#arMessageAudio').pause();
+    // Amankan data target balasan ke penyimpanan sesi
+    if (replyTarget) {
+      sessionStorage.setItem('sar_replyTo', replyTarget);
+    }
     
-    const wrapper = $('#scene-wrapper');
-    wrapper.style.visibility = 'hidden';
-    wrapper.style.zIndex = '-100';
-    
-    $('#ar-ui-container').hidden = true;
-    $('#screen-chat').hidden = false;
+    // Restart halaman agar mesin WebGL yang macet hancur sepenuhnya
+    window.location.reload();
   };
 
-  // Kita tetap biarkan listener exit-vr ini sebagai cadangan kalau user menekan tombol "X" bawaan browser
-  document.querySelector('a-scene').addEventListener('exit-vr', function () {
-    closeAR(); 
-  });
-
-  $('#btnBackAR').onclick = closeAR;
-  $('#btnBack').onclick = closeAR;
+  $('#btnBackAR').onclick = () => closeAR();
+  $('#btnBack').onclick = () => closeAR();
   
   $('#btnReply').onclick = () => {
-    if (replyAllowed) {
-      setReply(currentPayload.from);
-      toast('Membalas pesan ke ' + currentPayload.from);
-    }
-    closeAR();
+    closeAR(currentPayload ? currentPayload.from : null);
   };
 
   /* ================= BOOT ================= */
   renderMsgs();
   const initMatch = location.hash.match(/m=(.+)/);
   if (initMatch) { try { handlePayload(dec(initMatch[1])); } catch(e){} }
+  
+  // SOLUSI iPAD 'Layar Blank Putih': Cek jika user baru saja kembali (reload) dari menekan tombol reply di AR
+  const pendingReply = sessionStorage.getItem('sar_replyTo');
+  if (pendingReply) {
+    setReply(pendingReply);
+    sessionStorage.removeItem('sar_replyTo'); // Bersihkan setelah dipakai
+    toast('Membalas pesan ke ' + pendingReply);
+  }
 </script>
 </body>
 </html>
