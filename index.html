@@ -13,12 +13,19 @@
     /* ============ UI/UX REDESIGN: GLASSMORPHISM ============ */
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
+    
+    html, body {
+      background-color: #0b0c10 !important;
+    }
+
     body { 
       margin: 0; font-family: system-ui, -apple-system, sans-serif; 
-      background: #0b0c10; color: #f0f4f8; height: 100vh; overflow: hidden; 
+      color: #f0f4f8; height: 100vh; overflow: hidden; 
     }
     
-    .screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 10; background: #0b0c10; }
+    /* Screen Chat dibuat z-index paling tinggi agar selalu menutupi AR saat aktif */
+    .screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 20; background: #0b0c10; }
+    
     .glass-panel {
       background: rgba(22, 26, 32, 0.75);
       backdrop-filter: blur(16px);
@@ -65,7 +72,7 @@
     .mic-on { background: #e33 !important; color: #fff !important; animation: pulse 1s infinite; }
     @keyframes pulse { 50% { transform: scale(1.12); } }
 
-    .overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(8px); }
+    .overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(8px); z-index: 30; }
     .overlay h2 { margin: 0 0 10px 0; font-size: 22px; color: #fff; }
     .overlay p { margin: 0 0 20px 0; color: #c5c6c7; font-size: 14.5px; line-height: 1.5; }
     #shareLink { background: #0b0c10; border: 1px solid #1f2833; border-radius: 12px; padding: 12px; font-size: 12px; color: #66fcf1; word-break: break-all; margin-bottom: 20px; }
@@ -164,12 +171,12 @@
 </div>
 
 <!-- A-FRAME SCENE -->
-<div id="scene-wrapper" hidden>
+<!-- Membiarkannya selalu hidup di DOM, tapi posisinya di bawah layar chat -->
+<div id="scene-wrapper" style="position: absolute; inset: 0; z-index: 1;">
   <a-scene 
     webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
     renderer="colorManagement: true"
-    vr-mode-ui="enabled: false"
-    style="position: absolute; inset: 0; z-index: 1;">
+    vr-mode-ui="enabled: false">
     
     <a-assets>
       <a-asset-item id="dragon-model" src="dragon.glb"></a-asset-item>
@@ -194,24 +201,16 @@
       visible="false"
       animation-mixer="clip: *">
       
-      <!-- 3D Text Bubble Melayang di Atas Naga (Menghadap Kamera) -->
+      <!-- 3D Text Melayang Tanpa Plane -->
       <a-entity 
         id="dragon-bubble"
         position="0 2.5 0"
         look-at="[camera]"
         visible="false">
         
-        <!-- Background Plane -->
-        <a-entity 
-          geometry="primitive: plane; width: 2.5; height: 1.2" 
-          material="color: #1f2833; transparent: true; opacity: 0.85; shader: flat" 
-          position="0 0 -0.01">
-        </a-entity>
-        
-        <!-- Teks dengan Word Wrap -->
         <a-entity 
           id="dragon-text" 
-          text="value: ...; font: roboto; align: center; width: 2.3; wrapCount: 28; color: #66fcf1; lineHeight: 50" 
+          text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000; outlineWidth: 0.05" 
           position="0 0 0">
         </a-entity>
         
@@ -443,10 +442,11 @@
     currentPayload = payload;
     replyAllowed = payload && payload.from && payload.from !== myName;
     
-    $('.screen').hidden = true;
-    $('#scene-wrapper').hidden = false;
+    // Sembunyikan layer chat
+    $('#screen-chat').hidden = true;
     $('#ar-ui-container').hidden = false;
     
+    // Reset State
     $('#dragon-entity').setAttribute('visible', 'false');
     $('#dragon-bubble').setAttribute('visible', 'false');
     $('#arMessageAudio').pause();
@@ -478,7 +478,7 @@
       $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        // Tampilkan Teks 3D dengan Word Wrap (wrapCount: 28)
+        // Update Teks 3D dan atur Word Wrap
         textEl.setAttribute('text', 'value', currentPayload.text);
         bubble.setAttribute('visible', 'true');
         
@@ -493,12 +493,12 @@
     }
   };
 
-  // Bersihkan Memori Audio dan Balik ke Chat saat keluar dari AR
+  // Mencegah Layar Blank: Menampilkan kembali layer chat saat VR Session selesai
   document.querySelector('a-scene').addEventListener('exit-vr', function () {
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
     
-    $('#scene-wrapper').hidden = true;
+    // Matikan AR overlay, hidupkan layer Chat
     $('#ar-ui-container').hidden = true;
     $('#screen-chat').hidden = false;
   });
