@@ -90,7 +90,6 @@
     <button id="btnClear" class="iconbtn" style="font-size: 16px;" title="Bersihkan Obrolan">🗑️</button>
     <h1 class="logo">Stick-AR</h1>
     <div style="display: flex; gap: 8px;">
-      <!-- FITUR BARU: Toggle Bahasa -->
       <button id="btnLang" class="iconbtn" style="font-size: 13px; font-weight: bold; width: 36px; height: 36px;" title="Ganti Bahasa">ID</button>
       <button id="btnName" class="iconbtn" style="width: 36px; height: 36px;" title="Ganti Nama">✎</button>
     </div>
@@ -343,7 +342,6 @@
     $('#btnBack').textContent = t.btnBack;
     $('#btnLang').textContent = lang.toUpperCase();
     
-    // Perbarui teks instruksi AR jika sedang mencari lantai
     const arHintEl = $('#arHint');
     if (arHintEl.textContent === i18n[lang === 'id' ? 'en' : 'id'].arHintSearch) {
       arHintEl.textContent = t.arHintSearch;
@@ -398,9 +396,11 @@
       const d = document.createElement('div');
       if (m.kind === 'event') {
         d.className = 'event'; d.dataset.i = i;
+        // Penyesuaian nama di chat log
+        const pObj = Array.isArray(m.payload) ? { from: m.payload[2], to: m.payload[3] } : m.payload;
         const actionTxt = m.dir === 'out' 
-          ? t.msgSent + (m.payload.to ? (lang === 'id' ? ' ke ' : ' to ') + m.payload.to : '') 
-          : t.msgArr + m.payload.from;
+          ? t.msgSent + (pObj.to ? (lang === 'id' ? ' ke ' : ' to ') + pObj.to : '') 
+          : t.msgArr + pObj.from;
         d.textContent = actionTxt + ' — Tap';
       } else {
         d.className = 'bub ' + (m.dir === 'out' ? 'out' : 'in');
@@ -420,7 +420,13 @@
     const el = e.target.closest('.event');
     if (!el) return;
     const m = msgs[el.dataset.i];
-    if (m && m.payload) openAR(m.payload);
+    if (m && m.payload) {
+      // Decode array payload if necessary
+      const p = Array.isArray(m.payload) 
+        ? { v: m.payload[0], id: m.payload[1], from: m.payload[2], to: m.payload[3], text: m.payload[4], audio: m.payload[5], t: m.payload[6] } 
+        : m.payload;
+      openAR(p);
+    }
   });
 
   /* ================= REPLY LOGIC ================= */
@@ -469,14 +475,16 @@
     const text = $('#txt').value.trim();
     if (!text && !pendingAudio) return toast(t.toastEmpty);
     
-    const payload = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
+    const payloadObj = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
     
-    // Save to local history
-    msgs.push({ kind: 'event', dir: 'out', payload, t: Date.now() });
+    // KOMPRESI PAYLOAD: Menggunakan Array agar link lebih pendek
+    const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
+    
+    msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
     store.set('sar_msgs', JSON.stringify(msgs));
     renderMsgs();
     
-    lastShare = baseLink() + '#m=' + enc(payload);
+    lastShare = baseLink() + '#m=' + enc(compactPayload);
     $('#shareLink').textContent = lastShare;
     $('#screen-share').hidden = false;
     $('#txt').value = '';
@@ -495,8 +503,13 @@
 
   /* ================= INCOMING LOGIC ================= */
   function handlePayload(p) {
-    currentPayload = p;
-    $('#incFrom').textContent = i18n[lang].incFrom + p.from;
+    // Backward compatibility untuk link lama (Objek) dan link baru (Array Kompresi)
+    const parsed = Array.isArray(p) 
+      ? { v: p[0], id: p[1], from: p[2], to: p[3], text: p[4], audio: p[5], t: p[6] } 
+      : p;
+      
+    currentPayload = parsed;
+    $('#incFrom').textContent = i18n[lang].incFrom + parsed.from;
     $('#screen-incoming').hidden = false;
   }
   
@@ -509,8 +522,13 @@
   
   $('#btnAccept').onclick = () => {
     $('#screen-incoming').hidden = true;
-    if (currentPayload && currentPayload.from !== myName && !msgs.some(m => m.payload && m.payload.id === currentPayload.id)) {
-      msgs.push({ kind: 'event', dir: 'in', payload: currentPayload, t: Date.now() });
+    if (currentPayload && currentPayload.from !== myName && !msgs.some(m => {
+      const pid = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
+      return pid === currentPayload.id;
+    })) {
+      // Simpan kembali dalam format Array kompresi ke local storage
+      const compactPayload = [1, currentPayload.id, currentPayload.from, currentPayload.to, currentPayload.text, currentPayload.audio, currentPayload.t];
+      msgs.push({ kind: 'event', dir: 'in', payload: compactPayload, t: Date.now() });
       store.set('sar_msgs', JSON.stringify(msgs));
       renderMsgs();
     }
@@ -727,7 +745,7 @@
   };
 
   /* ================= BOOT ================= */
-  applyLang(); // Set initial language immediately on boot
+  applyLang(); 
   
   const initMatch = location.hash.match(/m=(.+)/);
   if (initMatch) { try { handlePayload(dec(initMatch[1])); } catch(e){} }
