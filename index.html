@@ -14,9 +14,13 @@
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
     
+    html, body {
+      background-color: #0b0c10 !important;
+    }
+
     body { 
       margin: 0; font-family: system-ui, -apple-system, sans-serif; 
-      background-color: #0b0c10; color: #f0f4f8; height: 100vh; overflow: hidden; 
+      color: #f0f4f8; height: 100vh; overflow: hidden; 
     }
     
     .screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 20; background: #0b0c10; }
@@ -166,11 +170,6 @@
 </div>
 
 <!-- A-FRAME SCENE -->
-<!-- 
-  Perbaikan Bug iOS Layar Putih:
-  Alih-alih menggunakan 'display: none', kita gunakan 'visibility: hidden' dan z-index agar 
-  A-Frame tetap bisa menginisialisasi WebGL Canvas dengan ukuran yang benar sejak awal.
--->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
   <a-scene 
     webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
@@ -201,13 +200,15 @@
       visible="false"
       animation-mixer="clip: *">
       
-      <!-- 3D Text Melayang Murni Tanpa Plane -->
+      <!-- 3D Text Melayang Murni Tanpa Plane Background -->
+      <!-- Outline Hitam ditebalkan agar terbaca di segala latar belakang -->
       <a-entity 
         id="dragon-bubble"
         position="0 2.5 0"
         look-at="[camera]"
         visible="false">
         
+        <!-- Font Roboto digunakan karena paling mirip Helvetica yang didukung A-Frame native -->
         <a-entity 
           id="dragon-text" 
           text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
@@ -499,20 +500,24 @@
     }
   };
 
-  // Saat keluar AR, sembunyikan kembali layer 3D
+  // Solusi BUG Layar Putih iOS: Reload URL bersih tanpa hash untuk reset kanvas WebGL
   document.querySelector('a-scene').addEventListener('exit-vr', function () {
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
     
-    const wrapper = $('#scene-wrapper');
-    wrapper.style.visibility = 'hidden';
-    wrapper.style.zIndex = '-100';
-    
-    $('#ar-ui-container').hidden = true;
-    $('#screen-chat').hidden = false;
+    history.replaceState(null, null, ' '); 
+    window.location.reload();
   });
 
-  const closeAR = () => { document.querySelector('a-scene').exitVR(); };
+  const closeAR = () => { 
+    try { document.querySelector('a-scene').exitVR(); } catch(e) {} 
+    
+    // Fallback jika event exit-vr tidak tertangkap di iOS
+    setTimeout(() => {
+        history.replaceState(null, null, ' '); 
+        window.location.reload();
+    }, 100);
+  };
 
   $('#btnBackAR').onclick = closeAR;
   $('#btnBack').onclick = closeAR;
