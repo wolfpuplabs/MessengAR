@@ -209,12 +209,12 @@
           position="0 0 0">
         </a-entity>
         
-        <!-- Tombol 3D Balas/Kembali -->
+        <!-- Tombol 3D Balas/Kembali (Diperkecil) -->
         <a-entity 
           id="dragon-action-btn"
-          geometry="primitive: plane; width: 1.5; height: 0.4"
+          geometry="primitive: plane; width: 1.0; height: 0.3"
           material="color: #45a29e; shader: flat; transparent: true; opacity: 0.9"
-          text="value: REPLY; font: roboto; align: center; width: 3; color: #ffffff; wrapCount: 15"
+          text="value: REPLY; font: roboto; align: center; width: 2.5; color: #ffffff; wrapCount: 15"
           position="0 -0.8 0"
           visible="false">
         </a-entity>
@@ -534,8 +534,8 @@
              actionBtn.setAttribute('text', 'value', 'REPLY');
              actionBtn.setAttribute('material', 'color', '#45a29e');
            } else {
-             actionBtn.setAttribute('text', 'value', 'BACK');
-             actionBtn.setAttribute('material', 'color', '#e33333');
+             actionBtn.setAttribute('text', 'value', 'REPLY'); // Berubah dari "BACK" ke "REPLY"
+             actionBtn.setAttribute('material', 'color', '#1f2833'); // Warna abu-abu kebiruan gelap (bukan merah)
            }
            actionBtn.setAttribute('visible', 'true');
            
