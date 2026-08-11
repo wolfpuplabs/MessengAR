@@ -113,10 +113,10 @@
   <div class="glass-panel">
     <h2>Naga Siap Terbang! 🐉</h2>
     <p>Bagikan link ini ke penerima. Saat dibuka, naga laut akan muncul di AR mengantar pesanmu.</p>
-    <div id="shareLink"></div>
+    <div id="shareLink">Memproses link... ⏳</div>
     <div class="row">
-      <button id="btnShare" class="primary-btn">Share</button>
-      <button id="btnCopy" class="primary-btn">Copy</button>
+      <button id="btnShare" class="primary-btn" disabled>Share</button>
+      <button id="btnCopy" class="primary-btn" disabled>Copy</button>
       <button id="btnShareBack" class="iconbtn">✕</button>
     </div>
   </div>
@@ -205,7 +205,7 @@
           position="0 0 0">
         </a-entity>
         
-        <!-- FITUR BARU: Tombol 3D Balas/Kembali (Desain Kapsul, Diperkecil) -->
+        <!-- Tombol 3D Balas/Kembali (Desain Kapsul, Diperkecil) -->
         <a-entity id="dragon-action-btn" position="0 -0.8 0" visible="false">
           <!-- Badan Kapsul (Tengah) -->
           <a-plane id="btn-body" width="0.6" height="0.2" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
@@ -340,9 +340,32 @@
     store.set('sar_msgs', JSON.stringify(msgs));
     renderMsgs();
     
-    lastShare = baseLink() + '#m=' + enc(payload);
-    $('#shareLink').textContent = lastShare;
+    // Siapkan Tampilan UI Tunggu
+    const longLink = baseLink() + '#m=' + enc(payload);
+    $('#shareLink').textContent = 'Memperpendek link... ⏳';
+    $('#btnShare').disabled = true;
+    $('#btnCopy').disabled = true;
     $('#screen-share').hidden = false;
+    
+    // FITUR BARU: Ambil Link Pendek dari TinyURL
+    fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longLink))
+      .then(res => res.ok ? res.text() : Promise.reject())
+      .then(shortUrl => {
+        lastShare = shortUrl;
+        $('#shareLink').textContent = lastShare;
+        $('#btnShare').disabled = false;
+        $('#btnCopy').disabled = false;
+      })
+      .catch(() => {
+        // Fallback jika API gagal (misal tidak ada koneksi internet / diblokir)
+        lastShare = longLink;
+        $('#shareLink').textContent = lastShare;
+        $('#btnShare').disabled = false;
+        $('#btnCopy').disabled = false;
+        toast('Gagal memperpendek, menggunakan link asli');
+      });
+
+    // Bersihkan Input
     $('#txt').value = '';
     pendingAudio = null;
     $('#btnMic').classList.remove('mic-on');
@@ -539,7 +562,6 @@
         bubble.setAttribute('visible', 'true');
         
         speakAndPlay(currentPayload, () => {
-           // Mengontrol properti warna dari elemen-elemen Kapsul
            const actionBtn = document.getElementById('dragon-action-btn');
            const btnBody = document.getElementById('btn-body');
            const btnLeft = document.getElementById('btn-left');
