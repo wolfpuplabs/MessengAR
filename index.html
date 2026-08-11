@@ -47,7 +47,7 @@
       pointer-events: auto;
     }
     .primary-btn:active { transform: scale(0.96); }
-    .iconbtn { width: 44px; height: 44px; border-radius: 14px; border: none; background: #1f2833; color: #66fcf1; font-size: 18px; cursor: pointer; flex: none; pointer-events: auto; }
+    .iconbtn { width: 44px; height: 44px; border-radius: 14px; border: none; background: #1f2833; color: #66fcf1; font-size: 18px; cursor: pointer; flex: none; pointer-events: auto; display: flex; align-items: center; justify-content: center;}
     
     #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
     .bub { max-width: 80%; padding: 12px 16px; border-radius: 20px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
@@ -89,12 +89,15 @@
   <header>
     <button id="btnClear" class="iconbtn" style="font-size: 16px;" title="Bersihkan Obrolan">🗑️</button>
     <h1 class="logo">Stick-AR</h1>
-    <button id="btnName" class="iconbtn" title="Ganti Nama">✎</button>
+    <div style="display: flex; gap: 8px;">
+      <!-- FITUR BARU: Toggle Bahasa -->
+      <button id="btnLang" class="iconbtn" style="font-size: 13px; font-weight: bold; width: 36px; height: 36px;" title="Ganti Bahasa">ID</button>
+      <button id="btnName" class="iconbtn" style="width: 36px; height: 36px;" title="Ganti Nama">✎</button>
+    </div>
   </header>
   <div id="msgs"></div>
   
   <div class="composer">
-    <!-- Banner Reply -->
     <div id="replyBanner" hidden>
       <span id="replyLabel"></span>
       <button class="iconbtn" style="width:28px;height:28px;font-size:12px;" id="btnCancelReply">✕</button>
@@ -103,7 +106,7 @@
     <div class="composer-inputs">
       <button id="btnMic" class="iconbtn" title="Rekam Suara">🎤</button>
       <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
-      <button id="btnSend" class="primary-btn">Kirim 🐉</button>
+      <button id="btnSend" class="primary-btn">Kirim</button>
     </div>
   </div>
 </div>
@@ -111,12 +114,12 @@
 <!-- SHARE MODAL -->
 <div id="screen-share" class="screen overlay" hidden>
   <div class="glass-panel">
-    <h2>Naga Siap Terbang! 🐉</h2>
-    <p>Bagikan link ini ke penerima. Saat dibuka, naga laut akan muncul di AR mengantar pesanmu.</p>
-    <div id="shareLink">Memproses link... ⏳</div>
+    <h2 id="shareTitleUI">Pesan Siap Terbang! ✨</h2>
+    <p id="shareDescUI">Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.</p>
+    <div id="shareLink"></div>
     <div class="row">
-      <button id="btnShare" class="primary-btn" disabled>Share</button>
-      <button id="btnCopy" class="primary-btn" disabled>Copy</button>
+      <button id="btnShare" class="primary-btn">Share</button>
+      <button id="btnCopy" class="primary-btn">Copy</button>
       <button id="btnShareBack" class="iconbtn">✕</button>
     </div>
   </div>
@@ -125,7 +128,7 @@
 <!-- INCOMING MODAL -->
 <div id="screen-incoming" class="screen overlay" hidden>
   <div class="glass-panel">
-    <h2>Courier Tiba!</h2>
+    <h2 id="incTitleUI">Courier Tiba!</h2>
     <p id="incFrom"></p>
     <button id="btnAccept" class="primary-btn">Buka di AR 👁️</button>
     <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%;">Tutup</button>
@@ -135,8 +138,8 @@
 <!-- NAME MODAL -->
 <div id="nameModal" class="screen overlay" hidden>
   <div class="glass-panel">
-    <h2>Selamat Datang</h2>
-    <p>Masukkan nama kamu sebagai pengirim:</p>
+    <h2 id="nameTitleUI">Selamat Datang</h2>
+    <p id="nameDescUI">Masukkan nama kamu sebagai pengirim:</p>
     <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center;">
     <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai ✨</button>
   </div>
@@ -159,7 +162,7 @@
   <div id="arHint">Pindai lantai hingga cincin putih muncul.</div>
   
   <div id="arBtns">
-    <button id="btnPlace" class="primary-btn" hidden>Panggil Naga</button>
+    <button id="btnPlace" class="primary-btn" hidden>Tampilkan Pesan</button>
     <button id="btnReply" class="primary-btn" hidden>Balas Pesan</button>
     <button id="btnBack" class="primary-btn" hidden>Kembali</button>
   </div>
@@ -184,7 +187,7 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Naga Entity -->
+    <!-- 3D Model -->
     <a-entity 
       id="dragon-entity" 
       gltf-model="url(dragon.glb)" 
@@ -207,7 +210,7 @@
         
         <!-- Tombol 3D Balas/Kembali (Desain Kapsul, Diperkecil) -->
         <a-entity id="dragon-action-btn" position="0 -0.8 0" visible="false">
-          <!-- Badan Kapsul (Tengah) -->
+          <!-- Badan Kapsul -->
           <a-plane id="btn-body" width="0.6" height="0.2" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
           <!-- Lengkungan Kiri -->
           <a-circle id="btn-left" radius="0.1" position="-0.3 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
@@ -236,6 +239,128 @@
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
 
+  /* ================= I18N (LANGUAGE) ================= */
+  const i18n = {
+    id: {
+      btnSend: "Kirim",
+      plcTxt: "Ketik pesan...",
+      replyLabel: "Membalas ke ",
+      titleShare: "Pesan Siap Terbang! ✨",
+      descShare: "Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.",
+      btnShare: "Bagikan",
+      btnCopy: "Salin",
+      titleInc: "Kurir Tiba!",
+      btnAccept: "Buka di AR 👁️",
+      btnIncLater: "Tutup",
+      titleName: "Selamat Datang",
+      descName: "Masukkan nama kamu sebagai pengirim:",
+      plcName: "Nama...",
+      btnNameSave: "Mulai ✨",
+      arHintScan: "Pindai lantai hingga cincin putih muncul.",
+      arHintFound: "Lantai ditemukan! Sentuh layar untuk memunculkan pesan.",
+      arHintSearch: "Mencari lantai/meja...",
+      arHintLoad: "Memuat AR...",
+      btnPlace: "Tampilkan Pesan",
+      btnReply: "Balas Pesan",
+      btnBack: "Kembali",
+      toastName: "Halo, ",
+      toastClear: "Obrolan dibersihkan 🧹",
+      toastMicErr: "Mic tidak didukung",
+      toastMicAtt: "🎤 Suara terlampir",
+      toastMicRec: "Merekam... tap 🎤 untuk stop",
+      toastMicDeny: "Mic tidak diizinkan",
+      toastEmpty: "Ketik pesan atau rekam suara dulu",
+      toastCopy: "Link tersalin!",
+      toastReply: "Membalas pesan ke ",
+      msgSent: "Pesan dikirim",
+      msgArr: "Pesan tiba dari ",
+      shareTitle: "Stick-AR",
+      shareText: "Ada pesan AR untukmu!",
+      incFrom: "Pesan rahasia dari ",
+      confirmClear: "Yakin ingin menghapus semua pesan?"
+    },
+    en: {
+      btnSend: "Send",
+      plcTxt: "Type a message...",
+      replyLabel: "Replying to ",
+      titleShare: "Message Ready! ✨",
+      descShare: "Share this link with the recipient. When opened, the courier will appear in AR.",
+      btnShare: "Share",
+      btnCopy: "Copy",
+      titleInc: "Courier Arrived!",
+      btnAccept: "Open in AR 👁️",
+      btnIncLater: "Close",
+      titleName: "Welcome",
+      descName: "Enter your name as the sender:",
+      plcName: "Name...",
+      btnNameSave: "Start ✨",
+      arHintScan: "Scan the floor until a white ring appears.",
+      arHintFound: "Floor found! Tap the screen to spawn the message.",
+      arHintSearch: "Searching for floor/table...",
+      arHintLoad: "Loading AR...",
+      btnPlace: "Show Message",
+      btnReply: "Reply Message",
+      btnBack: "Back",
+      toastName: "Hello, ",
+      toastClear: "Chat cleared 🧹",
+      toastMicErr: "Mic not supported",
+      toastMicAtt: "🎤 Voice attached",
+      toastMicRec: "Recording... tap 🎤 to stop",
+      toastMicDeny: "Mic access denied",
+      toastEmpty: "Type a message or record voice first",
+      toastCopy: "Link copied!",
+      toastReply: "Replying to ",
+      msgSent: "Message sent",
+      msgArr: "Message arrived from ",
+      shareTitle: "Stick-AR",
+      shareText: "There's an AR message for you!",
+      incFrom: "Secret message from ",
+      confirmClear: "Are you sure you want to clear the chat?"
+    }
+  };
+
+  let lang = store.get('sar_lang', 'id');
+  
+  function applyLang() {
+    const t = i18n[lang];
+    $('#btnSend').textContent = t.btnSend;
+    $('#txt').placeholder = replyTo ? t.replyLabel + replyTo + '...' : t.plcTxt;
+    if(replyTo) $('#replyLabel').textContent = t.replyLabel + replyTo;
+    $('#shareTitleUI').textContent = t.titleShare;
+    $('#shareDescUI').textContent = t.descShare;
+    $('#btnShare').textContent = t.btnShare;
+    $('#btnCopy').textContent = t.btnCopy;
+    $('#incTitleUI').textContent = t.titleInc;
+    if(currentPayload) $('#incFrom').textContent = t.incFrom + currentPayload.from;
+    $('#btnAccept').textContent = t.btnAccept;
+    $('#btnIncLater').textContent = t.btnIncLater;
+    $('#nameTitleUI').textContent = t.titleName;
+    $('#nameDescUI').textContent = t.descName;
+    $('#nameInput').placeholder = t.plcName;
+    $('#btnNameSave').textContent = t.btnNameSave;
+    $('#btnPlace').textContent = t.btnPlace;
+    $('#btnReply').textContent = t.btnReply;
+    $('#btnBack').textContent = t.btnBack;
+    $('#btnLang').textContent = lang.toUpperCase();
+    
+    // Perbarui teks instruksi AR jika sedang mencari lantai
+    const arHintEl = $('#arHint');
+    if (arHintEl.textContent === i18n[lang === 'id' ? 'en' : 'id'].arHintSearch) {
+      arHintEl.textContent = t.arHintSearch;
+    } else if (arHintEl.textContent === i18n[lang === 'id' ? 'en' : 'id'].arHintScan) {
+      arHintEl.textContent = t.arHintScan;
+    }
+    
+    renderMsgs();
+  }
+
+  $('#btnLang').onclick = () => {
+    lang = lang === 'id' ? 'en' : 'id';
+    store.set('sar_lang', lang);
+    applyLang();
+  };
+
+  /* ================= STATE ================= */
   let myName = store.get('sar_name', '');
   let msgs = JSON.parse(store.get('sar_msgs', '[]'));
   let currentPayload = null;
@@ -246,31 +371,37 @@
 
   /* ================= UI LOGIC ================= */
   function saveName() {
+    const t = i18n[lang];
     const v = ($('#nameInput').value || '').trim() || 'Anon';
     $('#nameModal').hidden = true;
     myName = v; store.set('sar_name', v);
-    toast('Halo, ' + v + '!');
+    toast(t.toastName + v + '!');
   }
   $('#btnNameSave').onclick = saveName;
   $('#btnName').onclick = () => { $('#nameInput').value = myName; $('#nameModal').hidden = false; };
   if (!myName) $('#nameModal').hidden = false;
 
   $('#btnClear').onclick = () => {
-    if (confirm('Yakin ingin menghapus semua pesan?')) {
+    const t = i18n[lang];
+    if (confirm(t.confirmClear)) {
       msgs = [];
       store.set('sar_msgs', '[]');
       renderMsgs();
-      toast('Obrolan dibersihkan 🧹');
+      toast(t.toastClear);
     }
   };
 
   function renderMsgs() {
+    const t = i18n[lang];
     const box = $('#msgs'); box.innerHTML = '';
     msgs.forEach((m, i) => {
       const d = document.createElement('div');
       if (m.kind === 'event') {
         d.className = 'event'; d.dataset.i = i;
-        d.textContent = m.text + ' — Tap untuk lihat AR';
+        const actionTxt = m.dir === 'out' 
+          ? t.msgSent + (m.payload.to ? (lang === 'id' ? ' ke ' : ' to ') + m.payload.to : '') 
+          : t.msgArr + m.payload.from;
+        d.textContent = actionTxt + ' — Tap';
       } else {
         d.className = 'bub ' + (m.dir === 'out' ? 'out' : 'in');
         let html = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + m.text;
@@ -294,13 +425,14 @@
 
   /* ================= REPLY LOGIC ================= */
   function setReply(name) {
+    const t = i18n[lang];
     replyTo = name;
     $('#replyBanner').hidden = !name;
     if (name) {
-      $('#replyLabel').textContent = 'Membalas ke ' + name;
-      $('#txt').placeholder = 'Balas ke ' + name + '...';
+      $('#replyLabel').textContent = t.replyLabel + name;
+      $('#txt').placeholder = t.replyLabel + name + '...';
     } else {
-      $('#txt').placeholder = 'Ketik pesan...';
+      $('#txt').placeholder = t.plcTxt;
     }
   }
   $('#btnCancelReply').onclick = () => setReply(null);
@@ -308,64 +440,45 @@
   /* ================= AUDIO RECORDING ================= */
   let mRec = null;
   $('#btnMic').onclick = () => {
+    const t = i18n[lang];
     if (mRec) { mRec.stop(); return; }
-    if (!navigator.mediaDevices) { toast('Mic tidak didukung'); return; }
+    if (!navigator.mediaDevices) { toast(t.toastMicErr); return; }
     
     navigator.mediaDevices.getUserMedia({ audio: true }).then(st => {
       mRec = new MediaRecorder(st, { audioBitsPerSecond: 20000 }); 
       const ch = [];
       mRec.ondataavailable = e => ch.push(e.data);
       mRec.onstop = () => {
-        st.getTracks().forEach(t => t.stop());
+        st.getTracks().forEach(track => track.stop());
         const r = new FileReader();
-        r.onload = () => { pendingAudio = r.result; toast('🎤 Suara terlampir'); };
+        r.onload = () => { pendingAudio = r.result; toast(t.toastMicAtt); };
         r.readAsDataURL(new Blob(ch, { type: mRec.mimeType }));
         mRec = null; 
         $('#btnMic').classList.remove('mic-on');
       };
       mRec.start(); 
       $('#btnMic').classList.add('mic-on'); 
-      toast('Merekam... tap 🎤 untuk stop');
+      toast(t.toastMicRec);
       setTimeout(() => { if (mRec) mRec.stop() }, 10000);
-    }).catch(() => toast('Mic tidak diizinkan'));
+    }).catch(() => toast(t.toastMicDeny));
   };
 
   /* ================= SEND LOGIC ================= */
   $('#btnSend').onclick = () => {
+    const t = i18n[lang];
     const text = $('#txt').value.trim();
-    if (!text && !pendingAudio) return toast('Ketik pesan atau rekam suara dulu');
+    if (!text && !pendingAudio) return toast(t.toastEmpty);
     
     const payload = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
-    msgs.push({ kind: 'event', dir: 'out', text: 'Naga dikirim' + (payload.to ? ' ke ' + payload.to : ''), payload, t: Date.now() });
+    
+    // Save to local history
+    msgs.push({ kind: 'event', dir: 'out', payload, t: Date.now() });
     store.set('sar_msgs', JSON.stringify(msgs));
     renderMsgs();
     
-    // Siapkan Tampilan UI Tunggu
-    const longLink = baseLink() + '#m=' + enc(payload);
-    $('#shareLink').textContent = 'Memperpendek link... ⏳';
-    $('#btnShare').disabled = true;
-    $('#btnCopy').disabled = true;
+    lastShare = baseLink() + '#m=' + enc(payload);
+    $('#shareLink').textContent = lastShare;
     $('#screen-share').hidden = false;
-    
-    // FITUR BARU: Ambil Link Pendek dari TinyURL
-    fetch('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(longLink))
-      .then(res => res.ok ? res.text() : Promise.reject())
-      .then(shortUrl => {
-        lastShare = shortUrl;
-        $('#shareLink').textContent = lastShare;
-        $('#btnShare').disabled = false;
-        $('#btnCopy').disabled = false;
-      })
-      .catch(() => {
-        // Fallback jika API gagal (misal tidak ada koneksi internet / diblokir)
-        lastShare = longLink;
-        $('#shareLink').textContent = lastShare;
-        $('#btnShare').disabled = false;
-        $('#btnCopy').disabled = false;
-        toast('Gagal memperpendek, menggunakan link asli');
-      });
-
-    // Bersihkan Input
     $('#txt').value = '';
     pendingAudio = null;
     $('#btnMic').classList.remove('mic-on');
@@ -373,16 +486,17 @@
   };
 
   $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
-  $('#btnCopy').onclick = () => { navigator.clipboard.writeText(lastShare).then(() => toast('Link tersalin!')); };
+  $('#btnCopy').onclick = () => { navigator.clipboard.writeText(lastShare).then(() => toast(i18n[lang].toastCopy)); };
   $('#btnShare').onclick = async () => {
-    try { await navigator.share({ title: 'Stick-AR', text: 'Ada naga pembawa pesan!', url: lastShare }); } 
+    const t = i18n[lang];
+    try { await navigator.share({ title: t.shareTitle, text: t.shareText, url: lastShare }); } 
     catch(e) { $('#btnCopy').click(); }
   };
 
   /* ================= INCOMING LOGIC ================= */
   function handlePayload(p) {
     currentPayload = p;
-    $('#incFrom').textContent = 'Pesan rahasia dari ' + p.from;
+    $('#incFrom').textContent = i18n[lang].incFrom + p.from;
     $('#screen-incoming').hidden = false;
   }
   
@@ -396,7 +510,7 @@
   $('#btnAccept').onclick = () => {
     $('#screen-incoming').hidden = true;
     if (currentPayload && currentPayload.from !== myName && !msgs.some(m => m.payload && m.payload.id === currentPayload.id)) {
-      msgs.push({ kind: 'event', dir: 'in', text: 'Naga tiba dari ' + currentPayload.from, payload: currentPayload, t: Date.now() });
+      msgs.push({ kind: 'event', dir: 'in', payload: currentPayload, t: Date.now() });
       store.set('sar_msgs', JSON.stringify(msgs));
       renderMsgs();
     }
@@ -408,11 +522,12 @@
     const audioEl = $('#arMessageAudio');
     if (payload.audio) {
       audioEl.src = payload.audio;
-      audioEl.play().catch(() => toast('Izin audio diblokir perangkat'));
+      audioEl.play().catch(() => toast('Audio blocked by device'));
       audioEl.onended = onFinish;
     } else if ('speechSynthesis' in window) {
       const u = new SpeechSynthesisUtterance(payload.text);
-      u.lang = 'id-ID'; u.pitch = 1.2; u.rate = 1.0;
+      u.lang = (lang === 'id') ? 'id-ID' : 'en-US'; 
+      u.pitch = 1.2; u.rate = 1.0;
       u.onend = onFinish; u.onerror = onFinish;
       speechSynthesis.speak(u);
     } else {
@@ -499,13 +614,13 @@
             
             if ($('#dragon-entity').getAttribute('visible') === false) {
                 $('#btnPlace').hidden = false;
-                $('#arHint').textContent = "Lantai ditemukan! Sentuh layar untuk panggil Naga.";
+                $('#arHint').textContent = i18n[lang].arHintFound;
             }
           } else {
              document.getElementById('reticle').setAttribute('visible', 'false');
              if ($('#dragon-entity').getAttribute('visible') === false) {
                 $('#btnPlace').hidden = true;
-                $('#arHint').textContent = "Mencari lantai/meja...";
+                $('#arHint').textContent = i18n[lang].arHintSearch;
              }
           }
         }
@@ -536,7 +651,7 @@
     $('#btnReply').hidden = true;
     $('#btnBack').hidden = true;
     $('#arHint').hidden = false;
-    $('#arHint').textContent = "Memuat AR...";
+    $('#arHint').textContent = i18n[lang].arHintLoad;
 
     const scene = document.querySelector('a-scene');
     if (scene.hasLoaded) { scene.enterAR(); } 
@@ -612,7 +727,8 @@
   };
 
   /* ================= BOOT ================= */
-  renderMsgs();
+  applyLang(); // Set initial language immediately on boot
+  
   const initMatch = location.hash.match(/m=(.+)/);
   if (initMatch) { try { handlePayload(dec(initMatch[1])); } catch(e){} }
   
@@ -620,7 +736,7 @@
   if (pendingReply) {
     setReply(pendingReply);
     sessionStorage.removeItem('sar_replyTo'); 
-    toast('Membalas pesan ke ' + pendingReply);
+    toast(i18n[lang].toastReply + pendingReply);
   }
 </script>
 </body>
