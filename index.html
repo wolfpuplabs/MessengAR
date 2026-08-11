@@ -1,452 +1,408 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Stick-AR Courier — 8th Wall Edition</title>
-<style>
-  *{box-sizing:border-box} [hidden]{display:none!important}
-  body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#0f1115;color:#eee;height:100vh;overflow:hidden}
-  .screen{position:fixed;inset:0;display:flex;flex-direction:column}
-  .logo{font-size:22px;font-weight:800;color:#e8f0f7;letter-spacing:1px;margin:0;text-shadow:0 2px 0 #000a,0 0 8px #ffffff33}
-  .logo .dash{color:#e33}
-  .primary{background:#e8e8ee;color:#14161a;border:none;border-radius:14px;padding:12px 20px;font-weight:600;font-size:15px;cursor:pointer}
-  .iconbtn{width:44px;height:44px;border-radius:12px;border:none;background:#e8e8ee;color:#14161a;font-size:18px;cursor:pointer;flex:none}
-  #screen-chat header{display:flex;align-items:center;justify-content:space-between;padding:12px;background:#161a20;border-bottom:1px solid #ffffff22}
-  #msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
-  .bub{max-width:78%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.4;word-wrap:break-word}
-  .bub small{display:block;opacity:.6;font-size:10px;margin-top:4px}
-  .bub audio{max-width:200px;display:block;margin-top:4px}
-  .out{align-self:flex-end;background:#2f6f5f;border-bottom-right-radius:4px}
-  .in{align-self:flex-start;background:#2a3038;border-bottom-left-radius:4px}
-  .event{align-self:center;background:#ffffff12;border:1px dashed #ffffff45;border-radius:999px;padding:7px 14px;font-size:12px;cursor:pointer;color:#cfe3ff}
-  .composer{display:flex;gap:8px;padding:10px;background:#161a20;border-top:1px solid #ffffff22}
-  #txt{flex:1;border:none;border-radius:14px;padding:12px;background:#232830;color:#eee;font-size:15px;outline:none}
-  #replyBanner{padding:6px 14px;background:#2f6f5f;font-size:12px;display:flex;justify-content:space-between;align-items:center}
-  .mic-on{background:#e33!important;color:#fff!important;animation:pulse 1s infinite}
-  @keyframes pulse{50%{transform:scale(1.12)}}
-  .overlay{background:#0f1115f5;justify-content:center;align-items:center;text-align:center;padding:24px;gap:14px;z-index:10}
-  .overlay h2{margin:0;font-size:20px} .overlay p{margin:0;color:#aab;max-width:320px;font-size:14px}
-  #shareLink{max-width:90%;word-break:break-all;background:#1b2028;border:1px solid #333;border-radius:10px;padding:10px;font-size:11px;color:#9cf;max-height:90px;overflow:auto}
-  .bigegg{font-size:80px;animation:bnc 1.2s infinite}
-  @keyframes bnc{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
-  .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
-  #screen-ar{background:#171b21}
-  #screen-ar.nocam{background:linear-gradient(#232a33 0 38%,#4a4038 38% 62%,#332e28 62% 100%)}
-  #cam,#gl,#ar8w{position:absolute;inset:0;width:100%;height:100%}
-  #cam{object-fit:cover} #gl{z-index:1} #ar8w{z-index:1}
-  #arTop{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px;z-index:3}
-  #arHint{position:absolute;top:22%;left:0;right:0;text-align:center;z-index:3;color:#fff;font-weight:700;font-size:19px;
-          text-shadow:0 0 10px #fff,0 1px 2px #000;pointer-events:none;padding:0 20px}
-  #bubble{position:absolute;z-index:3;transform:translate(-50%,-110%);color:#fff;font-weight:700;font-size:19px;text-align:center;
-          text-shadow:0 0 10px #fff,0 0 3px #fff;pointer-events:none;max-width:75%}
-  #arBtns{position:absolute;bottom:22px;left:0;right:0;display:flex;justify-content:center;gap:10px;z-index:3}
-  #credit{position:absolute;bottom:2px;right:8px;font-size:9px;color:#fffc;z-index:3}
-  #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#000c;border:1px solid #fff4;border-radius:999px;
-         padding:8px 18px;font-size:13px;z-index:99;max-width:85%;text-align:center}
-  #nameModal input{border:none;border-radius:12px;padding:12px;font-size:16px;background:#232830;color:#eee;outline:none;text-align:center;width:220px}
-</style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Stick-AR Courier (WebXR)</title>
+
+  <!-- A-Frame Asli (Tanpa 8th Wall) -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+
+  <style>
+    /* ============ UI/UX REDESIGN: GLASSMORPHISM ============ */
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { 
+      margin: 0; font-family: system-ui, -apple-system, sans-serif; 
+      background: #0b0c10; color: #f0f4f8; height: 100vh; overflow: hidden; 
+    }
+    
+    .screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 10; background: #0b0c10; }
+    .glass-panel {
+      background: rgba(22, 26, 32, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
+      padding: 24px;
+      text-align: center;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+    
+    header { 
+      display: flex; align-items: center; justify-content: space-between; 
+      padding: 16px 20px; background: rgba(11, 12, 16, 0.8);
+      backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .logo { font-size: 24px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
+    .primary-btn {
+      background: linear-gradient(135deg, #45a29e, #1f2833);
+      color: #fff; border: none; border-radius: 16px; padding: 14px 24px;
+      font-weight: 700; font-size: 15px; cursor: pointer; transition: transform 0.2s;
+      box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3);
+      pointer-events: auto; /* Penting untuk DOM Overlay WebXR */
+    }
+    .primary-btn:active { transform: scale(0.96); }
+    .iconbtn { width: 44px; height: 44px; border-radius: 14px; border: none; background: #1f2833; color: #66fcf1; font-size: 18px; cursor: pointer; flex: none; pointer-events: auto; }
+    
+    #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .bub { max-width: 80%; padding: 12px 16px; border-radius: 20px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .bub small { display: block; opacity: 0.5; font-size: 11px; margin-top: 6px; }
+    .out { align-self: flex-end; background: #1f2833; border-bottom-right-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.2); }
+    .in { align-self: flex-start; background: #202428; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
+    .event { align-self: center; background: rgba(69, 162, 158, 0.15); border: 1px dashed #45a29e; border-radius: 999px; padding: 8px 16px; font-size: 12px; cursor: pointer; color: #66fcf1; }
+    
+    .composer { display: flex; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.9); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+    #txt { flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px; background: #1f2833; color: #fff; font-size: 15px; outline: none; }
+    #txt:focus { border-color: #45a29e; }
+    
+    .overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(8px); }
+    .overlay h2 { margin: 0 0 10px 0; font-size: 22px; color: #fff; }
+    .overlay p { margin: 0 0 20px 0; color: #c5c6c7; font-size: 14.5px; line-height: 1.5; }
+    #shareLink { background: #0b0c10; border: 1px solid #1f2833; border-radius: 12px; padding: 12px; font-size: 12px; color: #66fcf1; word-break: break-all; margin-bottom: 20px; }
+    .row { display: flex; gap: 12px; justify-content: center; }
+    
+    /* AR DOM OVERLAY UI */
+    #ar-ui-container { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
+    .ar-top { display: flex; justify-content: space-between; pointer-events: auto; }
+    #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none;}
+    #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
+    
+    #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.9); border: 1px solid #45a29e; border-radius: 999px; padding: 10px 20px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+  </style>
 </head>
 <body>
 
+<!-- CHAT SCREEN -->
 <div id="screen-chat" class="screen">
-  <header><span style="width:44px"></span><h1 class="logo">Stick<span class="dash">-</span>AR</h1>
-    <button id="btnName" class="iconbtn">✎</button></header>
+  <header>
+    <span style="width:44px"></span>
+    <h1 class="logo">Stick-AR</h1>
+    <button id="btnName" class="iconbtn" title="Ganti Nama">✎</button>
+  </header>
   <div id="msgs"></div>
-  <div id="replyBanner" hidden><span id="replyLabel"></span><button class="iconbtn" style="width:28px;height:28px" id="btnCancelReply">✕</button></div>
   <div class="composer">
-    <button id="btnMic" class="iconbtn">🎤</button>
-    <input id="txt" placeholder="Ketik pesan…" autocomplete="off">
-    <button id="btnSend" class="primary">Kirim 🥚</button>
+    <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
+    <button id="btnSend" class="primary-btn">Kirim 🐉</button>
   </div>
 </div>
 
+<!-- SHARE MODAL -->
 <div id="screen-share" class="screen overlay" hidden>
-  <div class="bigegg">🥚</div><h2>Courier siap terbang!</h2>
-  <p>Bagikan link ini. Saat dibuka, telur menetas di dunia nyata (8th Wall World Effects) dan naga mengantar pesan + suara.</p>
-  <div id="shareLink"></div>
-  <div class="row"><button id="btnShare" class="primary"> Share</button><button id="btnCopy" class="primary">📋 Copy</button></div>
-  <div class="row"><button id="btnPreview" class="primary">👁 Preview AR</button><button id="btnShareBack" class="iconbtn">‹</button></div>
-</div>
-
-<div id="screen-incoming" class="screen overlay" hidden>
-  <div class="bigegg">🥚</div><h2>Courier creature arrived!</h2>
-  <p id="incFrom"></p>
-  <button id="btnAccept" class="primary">Terima & Buka di AR 🐣</button>
-  <button id="btnIncLater" class="iconbtn">✕</button>
-</div>
-
-<div id="screen-ar" class="screen" hidden>
-  <video id="cam" playsinline autoplay muted></video>
-  <canvas id="gl"></canvas>
-  <div id="ar8w" hidden></div>
-  <div id="arTop"><button id="btnBackAR" class="iconbtn">‹</button>
-    <h1 class="logo">Stick<span class="dash">-</span>AR</h1><span style="width:44px"></span></div>
-  <div id="arHint"></div>
-  <div id="bubble" hidden></div>
-  <div id="arBtns">
-    <button id="btnPlace" class="primary">Place Here</button>
-    <button id="btnReset" class="primary" hidden>Reset</button>
-    <button id="btnReply" class="primary" hidden>Reply 🥚</button>
+  <div class="glass-panel">
+    <h2>Naga Siap Terbang! 🐉</h2>
+    <p>Bagikan link ini ke penerima. Saat dibuka, naga laut akan muncul di AR mengantar pesanmu.</p>
+    <div id="shareLink"></div>
+    <div class="row">
+      <button id="btnShare" class="primary-btn">Share</button>
+      <button id="btnCopy" class="primary-btn">Copy</button>
+      <button id="btnShareBack" class="iconbtn">✕</button>
+    </div>
   </div>
-  <div id="credit">Dragon: shakiller (Sketchfab, CC-BY) • Engine: 8th Wall OSS</div>
 </div>
 
-<div id="toast" hidden></div>
+<!-- INCOMING MODAL -->
+<div id="screen-incoming" class="screen overlay" hidden>
+  <div class="glass-panel">
+    <h2>Courier Tiba!</h2>
+    <p id="incFrom"></p>
+    <button id="btnAccept" class="primary-btn">Buka di AR 👁️</button>
+    <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%;">Tutup</button>
+  </div>
+</div>
+
+<!-- NAME MODAL -->
 <div id="nameModal" class="screen overlay" hidden>
-  <div class="bigegg">🐉</div><h2>Selamat datang di Stick-AR</h2>
-  <p>Nama kamu sebagai pengirim courier:</p>
-  <input id="nameInput" maxlength="16" placeholder="nama…">
-  <button id="btnNameSave" class="primary">Mulai ✨</button>
+  <div class="glass-panel">
+    <h2>Selamat Datang</h2>
+    <p>Masukkan nama kamu sebagai pengirim:</p>
+    <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center;">
+    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai ✨</button>
+  </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<!-- TOAST -->
+<div id="toast" hidden></div>
+
+<!-- WEBXR AR SCENE -->
+<!-- Container UI yang akan "melayang" di atas WebXR (DOM Overlay) -->
+<div id="ar-ui-container" hidden>
+  <div class="ar-top">
+    <button id="btnBackAR" class="iconbtn">‹</button>
+    <h1 class="logo">Stick-AR</h1>
+    <span style="width:44px"></span>
+  </div>
+  <div id="arHint">Pindai lantai hingga cincin putih muncul.</div>
+  <div id="arBtns">
+    <button id="btnPlace" class="primary-btn" hidden>Panggil Naga</button>
+    <button id="btnReply" class="primary-btn" hidden>Kembali ke Chat</button>
+  </div>
+</div>
+
+<!-- 
+  A-Frame Scene:
+  - webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
+    Ini adalah inti dari WebXR. Ini memberitahu browser untuk meminta izin Hit-Test (deteksi lantai) 
+    dan menampilkan HTML `#ar-ui-container` di atas kamera AR.
+-->
+<a-scene 
+  webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
+  renderer="colorManagement: true"
+  vr-mode-ui="enterVRButton: #btnAccept" 
+  style="position: absolute; inset: 0; z-index: 1;">
+  
+  <a-assets>
+    <!-- Pastikan Anda telah membuat file dragon.gltf dari raw JSON yang Anda miliki -->
+    <a-asset-item id="dragon-model" src="dragon.gltf"></a-asset-item>
+  </a-assets>
+
+  <a-camera id="camera" position="0 1.6 0"></a-camera>
+  
+  <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
+  <a-light type="ambient" intensity="0.6"></a-light>
+
+  <!-- Logika Custom WebXR Hit Test -->
+  <a-entity id="xr-manager" webxr-hit-test></a-entity>
+
+  <!-- Reticle (Cincin penanda lantai) -->
+  <a-entity id="reticle" visible="false">
+    <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
+  </a-entity>
+
+  <!-- Naga Entity -->
+  <a-entity 
+    id="dragon-entity" 
+    gltf-model="#dragon-model" 
+    scale="0.5 0.5 0.5" 
+    visible="false"
+    animation-mixer="clip: *">
+    
+    <!-- Speech Bubble di atas Naga -->
+    <a-entity 
+      id="dragon-bubble"
+      position="0 2 0"
+      geometry="primitive: plane; width: 2; height: 0.8"
+      material="color: #1f2833; transparent: true; opacity: 0.9"
+      text="value: ...; align: center; width: 4; color: #66fcf1"
+      visible="false"
+      look-at="[camera]">
+    </a-entity>
+  </a-entity>
+</a-scene>
+
 <script>
-window.addEventListener('error',e=>toast('⚠️ '+(e.message||'Error'),4000));
-const $=s=>document.querySelector(s);
-const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-const enc=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o))));
-const dec=s=>JSON.parse(decodeURIComponent(escape(atob(s))));
-const baseLink=()=>location.href.split('#')[0];
-function toast(t,ms=2800){const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(e._t);e._t=setTimeout(()=>e.hidden=true,ms)}
-const store={_m:{},get(k,d){try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){const v=this._m[k];return v==null?d:v}},set(k,v){try{localStorage.setItem(k,v)}catch(e){this._m[k]=v}}};
-let myName=store.get('sar_name','');
-let msgs=(()=>{try{return JSON.parse(store.get('sar_msgs','[]'))}catch(e){return[]}})();
-let replyTo=null,pendingAudio=null,currentPayload=null,replyAllowed=false,lastShare='',pendingIncoming=null;
-const saveMsgs=()=>store.set('sar_msgs',JSON.stringify(msgs));
-const bc=('BroadcastChannel' in window)?new BroadcastChannel('stickar'):null;
+  /* ================= UTIL & STORAGE ================= */
+  const $ = s => document.querySelector(s);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  const dec = s => JSON.parse(decodeURIComponent(escape(atob(s))));
+  const baseLink = () => location.href.split('#')[0];
+  function toast(t, ms = 2500) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(e._t); e._t = setTimeout(() => e.hidden = true, ms); }
 
-/* ---------- nama ---------- */
-function saveName(){const v=($('#nameInput').value||'').trim()||'Anon';$('#nameModal').hidden=true;myName=v;store.set('sar_name',v);toast('Halo, '+v+'! 🐉')}
-$('#btnNameSave').addEventListener('click',saveName);
-$('#nameInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveName()});
-$('#btnName').addEventListener('click',()=>{$('#nameInput').value=myName;$('#nameModal').hidden=false});
-
-/* ---------- chat ---------- */
-const escapeHtml=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-function renderMsgs(){const box=$('#msgs');box.innerHTML='';
-  msgs.forEach((m,i)=>{const d=document.createElement('div');
-    if(m.kind==='event'){d.className='event';d.dataset.i=i;d.textContent=(m.dir==='in'?'🐣 ':'🥚 ')+m.text+' — tap untuk AR'}
-    else{d.className='bub '+(m.dir==='out'?'out':'in');
-      d.innerHTML='<b>'+escapeHtml(m.dir==='out'?myName:m.from)+'</b><br>'+escapeHtml(m.text);
-      if(m.audio)d.innerHTML+='<audio controls src="'+m.audio+'"></audio>';
-      d.innerHTML+='<small>'+new Date(m.t).toLocaleTimeString()+'</small>'}
-    box.appendChild(d)});
-  box.scrollTop=box.scrollHeight}
-$('#msgs').addEventListener('click',e=>{const el=e.target.closest('.event');if(!el)return;const m=msgs[el.dataset.i];if(m&&m.payload)openAR(m.payload)});
-function setReply(n){replyTo=n;$('#replyBanner').hidden=!n;if(n){$('#replyLabel').textContent='Membalas ke '+n;$('#txt').placeholder='Balas ke '+n+'…'}else $('#txt').placeholder='Ketik pesan…'}
-$('#btnCancelReply').onclick=()=>setReply(null);
-
-/* ---------- kirim ---------- */
-$('#btnSend').onclick=()=>{const text=$('#txt').value.trim();
-  if(!text&&!pendingAudio){toast('Ketik pesan atau rekam suara dulu');return}
-  const payload={v:1,id:uid(),from:myName||'Anon',to:replyTo||null,text:text||'(voice message)',audio:pendingAudio,skin:(Math.random()*4)|0,t:Date.now()};
-  msgs.push({kind:'event',dir:'out',text:'Courier dikirim ke '+(payload.to||'siapapun'),payload,t:Date.now()});
-  saveMsgs();renderMsgs();
-  lastShare=baseLink()+'#m='+enc(payload);$('#shareLink').textContent=lastShare;$('#screen-share').hidden=false;
-  if(bc)bc.postMessage({type:'deliver',payload});
-  $('#txt').value='';pendingAudio=null;$('#btnMic').classList.remove('mic-on');setReply(null)};
-$('#btnShare').onclick=async()=>{try{await navigator.share({title:'Stick-AR Courier',text:'🥚 Creature courier dari '+myName,url:lastShare})}catch(e){copyLink()}};
-$('#btnCopy').onclick=copyLink;
-function copyLink(){if(navigator.clipboard)navigator.clipboard.writeText(lastShare).then(()=>toast('Link tersalin!'));else prompt('Copy link:',lastShare)}
-$('#btnPreview').onclick=()=>{$('#screen-share').hidden=true;openAR(dec(lastShare.split('#m=')[1]))};
-$('#btnShareBack').onclick=()=>$('#screen-share').hidden=true;
-
-/* ---------- rekam suara ---------- */
-let mRec=null;
-$('#btnMic').onclick=()=>{if(mRec){mRec.stop();return}
-  if(!navigator.mediaDevices){toast('Mic tidak didukung');return}
-  navigator.mediaDevices.getUserMedia({audio:true}).then(st=>{
-    mRec=new MediaRecorder(st,{audioBitsPerSecond:20000});const ch=[];
-    mRec.ondataavailable=e=>ch.push(e.data);
-    mRec.onstop=()=>{st.getTracks().forEach(t=>t.stop());const r=new FileReader();
-      r.onload=()=>{pendingAudio=r.result;toast('🎤 Suara terlampir')};
-      r.readAsDataURL(new Blob(ch,{type:mRec.mimeType}));mRec=null;$('#btnMic').classList.remove('mic-on')};
-    mRec.start();$('#btnMic').classList.add('mic-on');toast('Merekam… tap 🎤 untuk stop');
-    setTimeout(()=>{if(mRec)mRec.stop()},10000)}).catch(()=>toast('Mic tidak diizinkan'))};
-
-/* ---------- incoming ---------- */
-function handlePayload(p){pendingIncoming=p;
-  $('#incFrom').textContent='Kurir creature dari '+p.from+' membawa pesan AR + audio untukmu.';
-  $('#screen-incoming').hidden=false;
-  if(document.hidden&&'Notification' in window&&Notification.permission==='granted')new Notification('🥚 Stick-AR Courier',{body:'Pesan dari '+p.from})}
-$('#btnAccept').onclick=()=>{$('#screen-incoming').hidden=true;const p=pendingIncoming;
-  if(p&&p.from!==myName&&!msgs.some(m=>m.payload&&m.payload.id===p.id)){msgs.push({kind:'event',dir:'in',text:'Courier tiba dari '+p.from,payload:p,t:Date.now()});saveMsgs();renderMsgs()}
-  openAR(p)};
-$('#btnIncLater').onclick=()=>$('#screen-incoming').hidden=true;
-if(bc)bc.onmessage=e=>{if(e.data&&e.data.type==='deliver')handlePayload(e.data.payload)};
-addEventListener('hashchange',()=>{const m=location.hash.match(/m=(.+)/);if(m){try{handlePayload(dec(m[1]))}catch(e){}}});
-
-/* ---------- sfx + tts ---------- */
-let AC=null;const ac=()=>AC||(AC=new (window.AudioContext||window.webkitAudioContext)());
-function sCrack(){const a=ac(),b=a.createBuffer(1,a.sampleRate*0.12,a.sampleRate),d=b.getChannelData(0);
-  for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*(1-i/d.length);
-  const s=a.createBufferSource(),f=a.createBiquadFilter();f.type='highpass';f.frequency.value=900;
-  s.buffer=b;s.connect(f).connect(a.destination);s.start()}
-function sChirp(){const a=ac(),t=a.currentTime;[0,0.14].forEach((o,i)=>{const o1=a.createOscillator(),g=a.createGain();
-  o1.type='square';o1.frequency.setValueAtTime(700+i*300,t+o);o1.frequency.exponentialRampToValueAtTime(1400+i*300,t+o+0.1);
-  g.gain.setValueAtTime(0.08,t+o);g.gain.exponentialRampToValueAtTime(0.001,t+o+0.12);
-  o1.connect(g).connect(a.destination);o1.start(t+o);o1.stop(t+o+0.13)})}
-function speak(text,cb){if(currentPayload&&currentPayload.audio){const a=new Audio(currentPayload.audio);
-    a.onended=cb;a.onerror=()=>tts(text,cb);a.play().catch(()=>tts(text,cb));return}tts(text,cb)}
-function tts(text,cb){if(!('speechSynthesis' in window)){setTimeout(cb,1500);return}
-  const u=new SpeechSynthesisUtterance(text);u.pitch=1.8;u.rate=1;let done=false;
-  const fin=()=>{if(!done){done=true;cb()}};u.onend=fin;u.onerror=fin;setTimeout(fin,Math.max(2500,text.length*90));
-  speechSynthesis.speak(u)}
-
-/* ================================================================
-   SHARED 3D BUILDERS (dipakai mode Three.js fallback & mode 8th Wall)
-   ================================================================ */
-const SKINS=[{b:'#e07a2e',d:'#7a2417',e:'#f2d8a7'},{b:'#c94f4f',d:'#5e1a1a',e:'#ffd9c9'},
-             {b:'#3f8f7a',d:'#1e4d43',e:'#d8f2e2'},{b:'#7a5fc9',d:'#33205e',e:'#e6d9ff'}];
-function eggTexture(T){const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
-  x.fillStyle='#4b7d78';x.fillRect(0,0,256,256);x.fillStyle='#2f5a55';
-  for(let i=0;i<26;i++){x.beginPath();x.ellipse(Math.random()*256,Math.random()*256,8+Math.random()*16,6+Math.random()*12,Math.random()*3,0,7);x.fill()}
-  return new T.CanvasTexture(c)}
-function stripeTexture(T,base,dark){const c=document.createElement('canvas');c.width=c.height=128;const x=c.getContext('2d');
-  x.fillStyle=base;x.fillRect(0,0,128,128);x.strokeStyle=dark;x.lineWidth=7;
-  for(let i=0;i<6;i++){x.beginPath();x.moveTo(-10,i*24+Math.random()*8);x.quadraticCurveTo(64,i*24+14,138,i*24+Math.random()*8);x.stroke()}
-  return new T.CanvasTexture(c)}
-function buildEgg(T){const m=new T.Mesh(new T.SphereGeometry(0.11,24,24),new T.MeshLambertMaterial({map:eggTexture(T)}));m.scale.y=1.25;return m}
-function buildShards(T,pos){const out=[];const tex=eggTexture(T);
-  for(let i=0;i<5;i++){const g=new T.SphereGeometry(0.112,14,10,i*(Math.PI*2/5),Math.PI*2/5*0.9,(i%2)*0.35,Math.PI*0.55);
-    const s=new T.Mesh(g,new T.MeshLambertMaterial({map:tex,side:T.DoubleSide}));s.position.copy(pos);
-    const a=i*(Math.PI*2/5)+0.6;
-    out.push({m:s,vx:Math.cos(a)*(0.4+Math.random()*0.4),vz:Math.sin(a)*(0.4+Math.random()*0.4),vy:0.8+Math.random()*0.8,rx:Math.random()*4,ry:Math.random()*4})}
-  return out}
-function buildCreature(T,skin){const P=SKINS[skin%4];
-  const mB=new T.MeshLambertMaterial({map:stripeTexture(T,P.b,P.d)});
-  const mD=new T.MeshLambertMaterial({color:P.d,side:T.DoubleSide});
-  const mE=new T.MeshLambertMaterial({color:P.e});
-  const g=new T.Group();
-  const body=new T.Mesh(new T.SphereGeometry(0.11,20,20),mB);body.scale.set(1,1.05,1.35);body.position.y=0.12;g.add(body);
-  const belly=new T.Mesh(new T.SphereGeometry(0.085,16,16),mE);belly.scale.set(1,1,1.2);belly.position.set(0,0.1,0.05);g.add(belly);
-  const head=new T.Group();head.position.set(0,0.27,0.07);g.add(head);
-  head.add(new T.Mesh(new T.SphereGeometry(0.09,20,20),mB));
-  const sn=new T.Mesh(new T.SphereGeometry(0.05,12,12),mE);sn.scale.set(1,0.7,0.9);sn.position.set(0,-0.015,0.08);head.add(sn);
-  const wings=[];
-  [-1,1].forEach(s=>{
-    const w=new T.Mesh(new T.SphereGeometry(0.028,10,10),new T.MeshBasicMaterial({color:0xffffff}));w.position.set(s*0.045,0.02,0.075);head.add(w);
-    const p=new T.Mesh(new T.SphereGeometry(0.014,8,8),new T.MeshBasicMaterial({color:0x111111}));p.position.set(s*0.045,0.02,0.098);head.add(p);
-    const h=new T.Mesh(new T.ConeGeometry(0.02,0.1,8),mD);h.position.set(s*0.05,0.1,0);h.rotation.z=-s*0.5;head.add(h);
-    const arm=new T.Mesh(new T.ConeGeometry(0.02,0.07,8),mD);arm.position.set(s*0.1,0.15,0.06);arm.rotation.x=-0.8;g.add(arm);
-    const leg=new T.Mesh(new T.ConeGeometry(0.025,0.08,8),mD);leg.position.set(s*0.05,0.04,-0.02);leg.rotation.x=Math.PI;g.add(leg);
-    const ws=new T.Shape();ws.moveTo(0,0);ws.lineTo(0.14,0.07);ws.lineTo(0.16,-0.03);ws.closePath();
-    const wg=new T.Mesh(new T.ShapeGeometry(ws),mD);wg.position.set(s*0.06,0.2,-0.06);wg.rotation.y=s*0.7;g.add(wg);wings.push(wg)});
-  for(let i=0;i<4;i++){const f=new T.Mesh(new T.ConeGeometry(0.015,0.05,6),mD);
-    f.position.set(Math.sin(i*1.8)*0.08,0.06,-Math.cos(i*1.8)*0.08);f.rotation.x=2.6;head.add(f)}
-  const tail=new T.Group();tail.position.set(0,0.12,-0.14);g.add(tail);
-  for(let i=0;i<4;i++){const s=new T.Mesh(new T.ConeGeometry(0.05-i*0.011,0.09,10),mB);
-    s.position.set(0,0.01*i,-0.06*i);s.rotation.x=-1.9-i*0.18;tail.add(s)}
-  return {group:g,tail,head,wings,procedural:true}}
-
-/* ================================================================
-   COURIER DIRECTOR — state machine telur→menetas→nganter (shared)
-   ================================================================ */
-const easeOutBack=x=>{const c=1.70158;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)};
-class CourierDirector{
-  constructor(T,io){this.T=T;this.io=io;this.phase='idle';this.phaseT=0;this.shards=[];this.egg=null;this.creature=null;this.eggPos=null;this.groundY=0}
-  clear(){const io=this.io;if(this.egg)io.remove(this.egg);if(this.creature)io.remove(this.creature.group);
-    this.shards.forEach(s=>io.remove(s.m));this.shards=[];this.egg=null;this.creature=null}
-  reset(){this.clear();this.phase='place';this.phaseT=0;this.io.hint('AR: tap permukaan / Place Here untuk menaruh telur')}
-  placeAt(p){if(this.phase!=='place')return;this.eggPos=p.clone();this.groundY=p.y-0.12;
-    this.egg=buildEgg(this.T);this.egg.position.copy(p);this.io.add(this.egg);
-    this.phase='wobble';this.phaseT=0;this.io.hint('Summon the courier…');this.io.onPlace&&this.io.onPlace()}
-  spawnCreature(){const io=this.io,T=this.T;
-    if(io.hasModel){ // GLB Sketchfab
-      const holder=new T.Group();io.add(holder);
-      const ent=document.createElement('a-entity');ent.setAttribute('gltf-model','#dragonModel');
-      io.sceneEl().appendChild(ent);
-      ent.addEventListener('model-loaded',()=>{holder.add(ent.object3D);
-        const box=new T.Box3().setFromObject(holder);const h=(box.getSize(new T.Vector3()).y)||1;
-        const s=0.24/h;holder.scale.setScalar(s);
-        const b2=new T.Box3().setFromObject(holder);holder.position.y-=b2.min.y;
-        ent.object3D.rotation.y=(window.DRAGON_ROT_Y!=null?DRAGON_ROT_Y:0);
-        toast('🐉 Cute Dragon — shakiller (CC-BY)')});
-      const head=new T.Object3D();head.position.y=0.28;holder.add(head);
-      this.creature={group:holder,tail:null,head,wings:[],procedural:false};
-    }else{
-      this.creature=buildCreature(T,this.io.payload.skin||0);io.add(this.creature.group);
-    }
-    this.creature.group.position.copy(this.eggPos);this.creature.group.scale.setScalar(0.05)}
-  update(dt,t){const T=this.T,io=this.io;
-    if(this.phase==='wobble'){this.phaseT+=dt;this.egg.rotation.z=Math.sin(t*11)*0.1*Math.min(this.phaseT,1.4);
-      if(this.phaseT>1.6){sCrack();io.remove(this.egg);this.egg=null;
-        this.shards=buildShards(T,this.eggPos);this.shards.forEach(s=>io.add(s.m));
-        this.spawnCreature();this.phase='emerge';this.phaseT=0}}
-    else if(this.phase==='emerge'){this.phaseT+=dt;const k=easeOutBack(Math.min(this.phaseT/0.9,1));
-      this.creature.group.scale.setScalar(0.05+0.95*k);this.updShards(dt);this.idle(t,0.3);
-      if(this.phaseT>1.1){this.phase='approach';this.phaseT=0;sChirp();io.hint('')}}
-    else if(this.phase==='approach'){this.phaseT+=dt;const u=Math.min(this.phaseT/1.6,1),e=u*u*(3-2*u);
-      const cam=io.cam();const fwd=new T.Vector3();cam.getWorldDirection(fwd);fwd.y=0;fwd.normalize();
-      const target=cam.position.clone().addScaledVector(fwd,0.55);target.y=cam.position.y-0.1;
-      this.creature.group.position.lerpVectors(this.eggPos,target,e);
-      this.creature.group.position.y+=Math.abs(Math.sin(this.phaseT*7))*0.06*(1-e);
-      const dir=cam.position.clone().sub(this.creature.group.position);
-      this.creature.group.rotation.y=Math.atan2(dir.x,dir.z);
-      this.updShards(dt);this.idle(t,2);
-      if(u>=1){this.phase='deliver';this.io.deliver()}}
-    else if(this.phase==='deliver'||this.phase==='done'){this.updShards(dt);this.idle(t,1)}}
-  updShards(dt){this.shards.forEach(s=>{if(s.done)return;s.vy-=3*dt;
-    s.m.position.x+=s.vx*dt;s.m.position.z+=s.vz*dt;s.m.position.y+=s.vy*dt;
-    s.m.rotation.x+=s.rx*dt;s.m.rotation.y+=s.ry*dt;
-    if(s.m.position.y<this.groundY){s.m.position.y=this.groundY;s.done=true}})}
-  idle(t,k){const c=this.creature;if(!c)return;
-    if(c.tail)c.tail.rotation.y=Math.sin(t*6)*0.35*k;
-    if(c.wings)c.wings.forEach((w,i)=>{w.rotation.z=(i?1:-1)*Math.sin(t*10)*0.5*k})}
-  headWorld(out){if(this.creature){this.creature.head.getWorldPosition(out);out.y+=0.14}return out}
-}
-
-/* ================================================================
-   MODE A: 8TH WALL WORLD EFFECTS (A-Frame + engine OSS)
-   ================================================================ */
-const S_8FRAME_LOCAL='./8frame-1.5.0.min.js';
-const S_AFRAME='https://aframe.io/releases/1.5.0/aframe.min.js';
-const S_XRX='https://cdn.jsdelivr.net/npm/@8thwall/xrextras@1/dist/xrextras.js';
-const S_ENG='https://cdn.jsdelivr.net/npm/@8thwall/engine-binary@1/dist/xr.js';
-function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');
-  s.src=src;s.crossOrigin='anonymous';s.onload=res;s.onerror=()=>rej(new Error('load '+src));document.head.appendChild(s)})}
-function waitXR8(){return new Promise(res=>{let n=0;const iv=setInterval(()=>{if(window.XR8||++n>50){clearInterval(iv);res(!!window.XR8)}},150)})}
-async function ensure8Wall(){
-  if(window.AFRAME&&window.XR8)return true;
-  try{
-    if(!window.AFRAME){try{await loadScript(S_8FRAME_LOCAL)}catch(e){try{await loadScript(S_AFRAME)}catch(e2){return false}}}
-    if(!window.AFRAME)return false;
-    await loadScript(S_XRX).catch(()=>{});
-    if(!window.XR8){await loadScript(S_ENG);await waitXR8()}
-    return !!window.XR8;
-  }catch(e){return false}
-}
-let mode8w=false,director=null,scene8wEl=null;
-async function start8Wall(payload){
-  mode8w=true;$('#ar8w').hidden=false;$('#cam').style.display='none';$('#gl').style.display='none';
-  let hasModel=false;try{const r=await fetch('assets/dragon.glb',{method:'HEAD'});hasModel=r.ok}catch(e){}
-  const tpl='<a-scene id="scene8w" xrextras-loading xrextras-runtime-error renderer="colorManagement:true" xrweb="allowedDevices: any;">'
-    +'<a-assets>'+(hasModel?'<a-asset-item id="dragonModel" src="assets/dragon.glb"></a-asset-item>':'')+'</a-assets>'
-    +'<a-camera id="camera8w" position="0 4 4" raycaster="objects:.cantap" cursor="fuse:false;rayOrigin:mouse"></a-camera>'
-    +'<a-light type="ambient" intensity="0.6"></a-light>'
-    +'<a-entity light="type:directional;intensity:0.9" position="1 4 2"></a-entity>'
-    +'<a-box id="ground8w" class="cantap" scale="1000 2 1000" position="0 -0.99 0" material="shader:shadow;transparent:true;opacity:0.35" shadow></a-box>'
-    +'<a-entity id="anchor8w"></a-entity></a-scene>';
-  $('#ar8w').innerHTML=tpl;
-  scene8wEl=$('#scene8w');
-  const boot=()=>{const T=AFRAME.THREE;const anchor=$('#anchor8w').object3D;
-    director=new CourierDirector(T,{
-      payload,hasModel,
-      sceneEl:()=>scene8wEl,
-      add:o=>anchor.add(o),remove:o=>anchor.remove(o),
-      cam:()=>scene8wEl.camera,
-      hint:m=>$('#arHint').textContent=m,
-      onPlace:()=>{$('#btnPlace').hidden=true;$('#btnReset').hidden=false},
-      deliver:()=>deliverSequence()
-    });
-    director.reset();
-    const g=$('#ground8w');
-    if(g)g.addEventListener('click',ev=>{if(director&&director.phase==='place'&&ev.detail&&ev.detail.intersection)
-      director.placeAt(ev.detail.intersection.point)});
+  const store = {
+    get(k, d) { try { return localStorage.getItem(k) || d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
   };
-  if(scene8wEl.camera)boot();else scene8wEl.addEventListener('camera-set-active',boot,{once:true});
-  setTimeout(()=>{if(!director)boot()},4000);
-}
-/* tap → hitTest permukaan asli (World Effects) */
-addEventListener('click',e=>{
-  if(!mode8w||!director||director.phase!=='place')return;
-  if(e.target.closest('button,a,input'))return;
-  if(window.XR8&&XR8.XrController&&XR8.XrController.hitTest){
-    try{
-      const rs=XR8.XrController.hitTest(e.clientX/innerWidth,e.clientY/innerHeight,['FEATURE_POINT'])||[];
-      const r=rs.find(h=>h.type==='DETECTED_SURFACE')||rs.find(h=>r&&h.type==='ESTIMATED_SURFACE')||rs[0];
-      if(r&&r.position){director.placeAt(new AFRAME.THREE.Vector3(r.position.x,r.position.y,r.position.z));return}
-    }catch(err){}
+
+  let myName = store.get('sar_name', '');
+  let msgs = JSON.parse(store.get('sar_msgs', '[]'));
+  let currentPayload = null;
+  let lastShare = '';
+
+  /* ================= UI LOGIC ================= */
+  function saveName() {
+    const v = ($('#nameInput').value || '').trim() || 'Anon';
+    $('#nameModal').hidden = true;
+    myName = v; store.set('sar_name', v);
+    toast('Halo, ' + v + '!');
   }
-});
+  $('#btnNameSave').onclick = saveName;
+  $('#btnName').onclick = () => { $('#nameInput').value = myName; $('#nameModal').hidden = false; };
+  if (!myName) $('#nameModal').hidden = false;
 
-/* ================================================================
-   MODE B: FALLBACK pseudo-AR (Three.js + kamera)
-   ================================================================ */
-let renderer,scene,camera,raf=null,clock,stream=null,reticle;
-let oBase=null,oYaw=0,oPitch=0,tYaw=0,tPitch=0;
-function initThree(){if(renderer)return;
-  renderer=new THREE.WebGLRenderer({canvas:$('#gl'),alpha:true,antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0,0);
-  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,0.01,30);camera.rotation.order='YXZ';
-  scene.add(new THREE.HemisphereLight(0xffffff,0x44505a,1));
-  const dl=new THREE.DirectionalLight(0xffffff,0.8);dl.position.set(1,2,1);scene.add(dl);
-  reticle=new THREE.Group();
-  const ring=new THREE.Mesh(new THREE.RingGeometry(0.09,0.11,40),new THREE.MeshBasicMaterial({color:0xffffff}));ring.rotation.x=-Math.PI/2;reticle.add(ring);
-  const arrow=new THREE.Mesh(new THREE.ConeGeometry(0.05,0.12,4),new THREE.MeshBasicMaterial({color:0xccccbb}));arrow.rotation.x=Math.PI;arrow.position.y=0.16;arrow.name='arrow';reticle.add(arrow);
-  scene.add(reticle);clock=new THREE.Clock();
-  addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-  addEventListener('deviceorientation',e=>{if(e.gamma==null)return;if(!oBase)oBase={b:e.beta,g:e.gamma};
-    tYaw=THREE.MathUtils.clamp(-(e.gamma-oBase.g)*0.006,-0.4,0.4);tPitch=THREE.MathUtils.clamp(-(e.beta-oBase.b)*0.006,-0.3,0.3)})}
-function startFallback(payload){
-  mode8w=false;$('#ar8w').hidden=true;$('#cam').style.display='';$('#gl').style.display='';
-  initThree();
-  director=new CourierDirector(THREE,{
-    payload,hasModel:false,
-    sceneEl:()=>null,
-    add:o=>scene.add(o),remove:o=>scene.remove(o),
-    cam:()=>camera,
-    hint:m=>$('#arHint').textContent=m,
-    onPlace:()=>{$('#btnPlace').hidden=true;$('#btnReset').hidden=false;reticle.visible=false},
-    deliver:()=>deliverSequence()
+  function renderMsgs() {
+    const box = $('#msgs'); box.innerHTML = '';
+    msgs.forEach((m, i) => {
+      const d = document.createElement('div');
+      if (m.kind === 'event') {
+        d.className = 'event'; d.dataset.i = i;
+        d.textContent = m.text + ' — Tap untuk lihat AR';
+      } else {
+        d.className = 'bub ' + (m.dir === 'out' ? 'out' : 'in');
+        d.innerHTML = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + m.text + '<small>' + new Date(m.t).toLocaleTimeString() + '</small>';
+      }
+      box.appendChild(d);
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+
+  $('#msgs').addEventListener('click', e => {
+    const el = e.target.closest('.event');
+    if (!el) return;
+    const m = msgs[el.dataset.i];
+    if (m && m.payload) openAR(m.payload);
   });
-  director.reset();reticle.visible=true;
-  if(navigator.mediaDevices)navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}})
-    .then(s=>{stream=s;$('#cam').srcObject=s;$('#cam').play();$('#screen-ar').classList.remove('nocam')})
-    .catch(()=>{$('#cam').style.display='none';$('#screen-ar').classList.add('nocam')});
-  if(window.DeviceOrientationEvent&&DeviceOrientationEvent.requestPermission)DeviceOrientationEvent.requestPermission().catch(()=>{});
-  if(!raf)tickFB();
-}
-function tickFB(){raf=requestAnimationFrame(tickFB);
-  const dt=Math.min(clock.getDelta(),0.05),t=clock.elapsedTime;
-  oYaw+=(tYaw-oYaw)*0.1;oPitch+=(tPitch-oPitch)*0.1;camera.rotation.y=oYaw;camera.rotation.x=oPitch;
-  if(director&&director.phase==='place'){const v=new THREE.Vector3();camera.getWorldDirection(v);v.y=0;v.normalize();
-    reticle.position.set(v.x,-0.4,v.z);reticle.getObjectByName('arrow').position.y=0.16+Math.sin(t*4)*0.03}
-  if(director)director.update(dt,t);
-  updateBubble(camera);
-  renderer.render(scene,camera)}
 
-/* ================================================================
-   ORKESTRASI AR
-   ================================================================ */
-function deliverSequence(){const b=$('#bubble');b.hidden=false;b.textContent='';
-  const txt=currentPayload.text||'…';let i=0;
-  const tw=setInterval(()=>{b.textContent=txt.slice(0,++i);if(i>=txt.length)clearInterval(tw)},35);
-  speak(txt,()=>setTimeout(()=>{director.phase='done';
-    $('#btnReply').hidden=false;$('#btnReply').textContent=replyAllowed?'Reply 🥚':'Kembali ke Chat'},600))}
-function updateBubble(cam){if($('#bubble').hidden||!director||!director.creature)return;
-  const v=new T3tmp();director.headWorld(v);v.project(cam);
-  const b=$('#bubble');b.style.left=((v.x*0.5+0.5)*innerWidth)+'px';b.style.top=((-v.y*0.5+0.5)*innerHeight)+'px'}
-function T3tmp(){return mode8w?new AFRAME.THREE.Vector3():new THREE.Vector3()}
-async function openAR(payload){
-  currentPayload=payload;replyAllowed=!!(payload&&payload.from&&payload.from!==myName);
-  $('#screen-chat').hidden=true;$('#screen-share').hidden=true;$('#screen-ar').hidden=false;
-  $('#btnReply').hidden=true;$('#btnReset').hidden=true;$('#btnPlace').hidden=false;$('#bubble').hidden=true;
-  toast('Memuat engine 8th Wall…');
-  const ok=await ensure8Wall();
-  if(ok){toast('🌍 Mode: 8th Wall World Effects');start8Wall(payload)}
-  else{toast('8th Wall tidak tersedia → mode simulasi');startFallback(payload)}
-}
-function stopAR(){
-  if(raf){cancelAnimationFrame(raf);raf=null}
-  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
-  if(mode8w){try{window.XR8&&XR8.stop&&XR8.stop()}catch(e){}$('#ar8w').innerHTML='';scene8wEl=null;director=null;mode8w=false}
-  $('#screen-ar').hidden=true;$('#screen-chat').hidden=false}
-$('#btnBackAR').onclick=stopAR;
-$('#btnReset').onclick=()=>{if(director){director.reset();$('#btnPlace').hidden=false;$('#btnReset').hidden=true;$('#btnReply').hidden=true;$('#bubble').hidden=true;if(!mode8w&&reticle)reticle.visible=true}};
-$('#btnPlace').onclick=()=>{if(!director||director.phase!=='place')return;
-  const T=mode8w?AFRAME.THREE:THREE;const cam=director.io.cam();
-  const v=new T.Vector3();cam.getWorldDirection(v);v.y=0;v.normalize();
-  const p=cam.position.clone().addScaledVector(v,1.0);p.y=cam.position.y-0.4;
-  director.placeAt(p)};
-$('#btnReply').onclick=()=>{if(replyAllowed){setReply(currentPayload.from);toast('Membalas ke '+currentPayload.from)}stopAR()};
+  $('#btnSend').onclick = () => {
+    const text = $('#txt').value.trim();
+    if (!text) return toast('Ketik pesan dulu');
+    
+    const payload = { v: 1, id: uid(), from: myName, text: text, t: Date.now() };
+    msgs.push({ kind: 'event', dir: 'out', text: 'Naga dikirim', payload, t: Date.now() });
+    store.set('sar_msgs', JSON.stringify(msgs));
+    renderMsgs();
+    
+    lastShare = baseLink() + '#m=' + enc(payload);
+    $('#shareLink').textContent = lastShare;
+    $('#screen-share').hidden = false;
+    $('#txt').value = '';
+  };
 
-/* boot */
-try{renderMsgs()}catch(e){}
-$('#nameModal').hidden=!!myName;
-const m0=location.hash.match(/m=(.+)/);
-if(m0){try{handlePayload(dec(m0[1]))}catch(e){}}
+  $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
+  $('#btnCopy').onclick = () => {
+    navigator.clipboard.writeText(lastShare).then(() => toast('Link tersalin!'));
+  };
+  $('#btnShare').onclick = async () => {
+    try { await navigator.share({ title: 'Stick-AR', text: 'Ada naga pembawa pesan!', url: lastShare }); } 
+    catch(e) { $('#btnCopy').click(); }
+  };
+
+  /* ================= INCOMING LOGIC ================= */
+  function handlePayload(p) {
+    currentPayload = p;
+    $('#incFrom').textContent = 'Pesan rahasia dari ' + p.from;
+    $('#screen-incoming').hidden = false;
+  }
+  
+  window.addEventListener('hashchange', () => {
+    const m = location.hash.match(/m=(.+)/);
+    if (m) { try { handlePayload(dec(m[1])); } catch(e){} }
+  });
+
+  $('#btnIncLater').onclick = () => $('#screen-incoming').hidden = true;
+  $('#btnAccept').onclick = () => {
+    $('#screen-incoming').hidden = true;
+    if (currentPayload && currentPayload.from !== myName) {
+      msgs.push({ kind: 'event', dir: 'in', text: 'Naga tiba dari ' + currentPayload.from, payload: currentPayload, t: Date.now() });
+      store.set('sar_msgs', JSON.stringify(msgs));
+      renderMsgs();
+    }
+    openAR(currentPayload);
+  };
+
+  /* ================= WEBXR HIT-TEST COMPONENT ================= */
+  AFRAME.registerComponent('webxr-hit-test', {
+    init: function () {
+      this.xrHitTestSource = null;
+      this.viewerSpace = null;
+      this.refSpace = null;
+
+      this.el.sceneEl.renderer.xr.addEventListener('sessionstart', (ev) => {
+        let session = this.el.sceneEl.renderer.xr.getSession();
+        
+        session.requestReferenceSpace('viewer').then((space) => {
+          this.viewerSpace = space;
+          session.requestHitTestSource({ space: this.viewerSpace }).then((hitTestSource) => {
+            this.xrHitTestSource = hitTestSource;
+          });
+        });
+
+        session.requestReferenceSpace('local-floor').then((space) => {
+          this.refSpace = space;
+        });
+      });
+
+      this.el.sceneEl.renderer.xr.addEventListener('sessionend', () => {
+        this.xrHitTestSource = null;
+      });
+    },
+    tick: function () {
+      if (this.el.sceneEl.is('ar-mode')) {
+        if (!this.viewerSpace) return;
+        
+        let frame = this.el.sceneEl.frame;
+        let xrViewerPose = frame.getViewerPose(this.refSpace);
+
+        if (this.xrHitTestSource && xrViewerPose) {
+          let hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+          if (hitTestResults.length > 0) {
+            let pose = hitTestResults[0].getPose(this.refSpace);
+            
+            // Tampilkan reticle di posisi lantai
+            const reticle = document.getElementById('reticle');
+            reticle.setAttribute('position', pose.transform.position);
+            reticle.setAttribute('visible', 'true');
+            
+            if ($('#dragon-entity').getAttribute('visible') === false) {
+                $('#btnPlace').hidden = false;
+                $('#arHint').textContent = "Lantai ditemukan! Tap Panggil Naga.";
+            }
+          } else {
+             document.getElementById('reticle').setAttribute('visible', 'false');
+             if ($('#dragon-entity').getAttribute('visible') === false) {
+                $('#btnPlace').hidden = true;
+                $('#arHint').textContent = "Mencari lantai...";
+             }
+          }
+        }
+      }
+    }
+  });
+
+  /* ================= AR LOGIC ================= */
+  function openAR(payload) {
+    currentPayload = payload;
+    $('.screen').hidden = true;
+    $('#ar-ui-container').hidden = false;
+    
+    // Reset AR State
+    $('#dragon-entity').setAttribute('visible', 'false');
+    $('#dragon-bubble').setAttribute('visible', 'false');
+    $('#btnPlace').hidden = true;
+    $('#btnReply').hidden = true;
+    $('#arHint').textContent = "Memuat AR...";
+
+    // A-Frame akan otomatis meminta sesi WebXR saat tombol #btnAccept (Enter VR) ditekan
+    document.querySelector('a-scene').enterVR();
+  }
+
+  $('#btnPlace').onclick = () => {
+    const reticle = document.getElementById('reticle');
+    const dragon = document.getElementById('dragon-entity');
+    const bubble = document.getElementById('dragon-bubble');
+
+    if (reticle.getAttribute('visible')) {
+      // Pindahkan naga ke posisi reticle
+      dragon.setAttribute('position', reticle.getAttribute('position'));
+      dragon.setAttribute('visible', 'true');
+      
+      // Sembunyikan reticle dan tombol place
+      reticle.setAttribute('visible', 'false');
+      $('#btnPlace').hidden = true;
+      $('#btnReply').hidden = false;
+
+      if (currentPayload) {
+        bubble.setAttribute('text', `value: ${currentPayload.text}; align: center; width: 4; color: #66fcf1`);
+        bubble.setAttribute('visible', 'true');
+        $('#arHint').textContent = `Pesan dari ${currentPayload.from}`;
+      }
+    }
+  };
+
+  const closeAR = () => {
+    document.querySelector('a-scene').exitVR();
+    $('#ar-ui-container').hidden = true;
+    $('#screen-chat').hidden = false;
+  };
+
+  $('#btnBackAR').onclick = closeAR;
+  $('#btnReply').onclick = closeAR;
+
+  /* ================= BOOT ================= */
+  renderMsgs();
+  const initMatch = location.hash.match(/m=(.+)/);
+  if (initMatch) { try { handlePayload(dec(initMatch[1])); } catch(e){} }
 </script>
 </body>
 </html>
