@@ -14,20 +14,11 @@
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
     
-    html, body {
-      background-color: #0b0c10;
-      margin: 0; 
-      font-family: system-ui, -apple-system, sans-serif; 
-      color: #f0f4f8; 
-      height: 100vh; 
-      overflow: hidden; 
+    body { 
+      margin: 0; font-family: system-ui, -apple-system, sans-serif; 
+      background-color: #0b0c10; color: #f0f4f8; height: 100vh; overflow: hidden; 
     }
     
-    /* 
-      PERBAIKAN FREEZE: 
-      Screen Chat diberi z-index 20 dan background pekat agar menutupi AR di belakangnya.
-      A-Frame Scene dibiarkan selalu jalan di z-index 1.
-    */
     .screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 20; background: #0b0c10; }
     
     .glass-panel {
@@ -136,7 +127,7 @@
   <div class="glass-panel">
     <h2>Courier Tiba!</h2>
     <p id="incFrom"></p>
-    <button id="btnAccept" class="primary-btn" id="btnBukaAR">Buka di AR 👁️</button>
+    <button id="btnAccept" class="primary-btn">Buka di AR 👁️</button>
     <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%;">Tutup</button>
   </div>
 </div>
@@ -175,55 +166,58 @@
 </div>
 
 <!-- A-FRAME SCENE -->
-<!-- PERBAIKAN: Scene selalu dirender di belakang (z-index: 1), Chat UI menutupi di depannya -->
-<a-scene 
-  webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
-  renderer="colorManagement: true"
-  vr-mode-ui="enabled: false"
-  style="position: absolute; inset: 0; z-index: 1;">
-  
-  <a-assets>
-    <!-- Model Dragon (Pastikan file dragon.glb ada di folder yang sama) -->
-    <a-asset-item id="dragon-model" src="dragon.glb"></a-asset-item>
-  </a-assets>
-
-  <a-camera id="camera" position="0 1.6 0"></a-camera>
-  
-  <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
-  <a-light type="ambient" intensity="0.6"></a-light>
-
-  <a-entity id="xr-manager" webxr-hit-test></a-entity>
-
-  <!-- Reticle -->
-  <a-entity id="reticle" visible="false">
-    <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
-  </a-entity>
-
-  <!-- Naga Entity -->
-  <a-entity 
-    id="dragon-entity" 
-    gltf-model="#dragon-model" 
-    scale="0.5 0.5 0.5" 
-    visible="false"
-    animation-mixer="clip: *">
+<!-- 
+  Perbaikan Bug iOS Layar Putih:
+  Alih-alih menggunakan 'display: none', kita gunakan 'visibility: hidden' dan z-index agar 
+  A-Frame tetap bisa menginisialisasi WebGL Canvas dengan ukuran yang benar sejak awal.
+-->
+<div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
+  <a-scene 
+    webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container"
+    renderer="colorManagement: true"
+    vr-mode-ui="enabled: false"
+    transparent="true">
     
-    <!-- 3D Text Melayang MURNI (Tanpa Plane) -->
-    <a-entity 
-      id="dragon-bubble"
-      position="0 2.5 0"
-      look-at="[camera]"
-      visible="false">
-      
-      <!-- Teks dengan Word Wrap dan Outline Hitam Tebal -->
-      <a-entity 
-        id="dragon-text" 
-        text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.15" 
-        position="0 0 0">
-      </a-entity>
-      
+    <a-assets>
+      <a-asset-item id="dragon-model" src="dragon.glb"></a-asset-item>
+    </a-assets>
+
+    <a-camera id="camera" position="0 1.6 0"></a-camera>
+    
+    <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
+    <a-light type="ambient" intensity="0.6"></a-light>
+
+    <a-entity id="xr-manager" webxr-hit-test></a-entity>
+
+    <a-entity id="reticle" visible="false">
+      <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
-  </a-entity>
-</a-scene>
+
+    <!-- Naga Entity -->
+    <a-entity 
+      id="dragon-entity" 
+      gltf-model="#dragon-model" 
+      scale="0.5 0.5 0.5" 
+      visible="false"
+      animation-mixer="clip: *">
+      
+      <!-- 3D Text Melayang Murni Tanpa Plane -->
+      <a-entity 
+        id="dragon-bubble"
+        position="0 2.5 0"
+        look-at="[camera]"
+        visible="false">
+        
+        <a-entity 
+          id="dragon-text" 
+          text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
+          position="0 0 0">
+        </a-entity>
+        
+      </a-entity>
+    </a-entity>
+  </a-scene>
+</div>
 
 <script>
   /* ================= UTIL & STORAGE ================= */
@@ -340,7 +334,7 @@
     $('#txt').value = '';
     pendingAudio = null;
     $('#btnMic').classList.remove('mic-on');
-    setReply(null); // Reset reply state
+    setReply(null); 
   };
 
   $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
@@ -448,8 +442,14 @@
     currentPayload = payload;
     replyAllowed = payload && payload.from && payload.from !== myName;
     
-    // Tampilkan WebXR dengan men-hide chat screen (mengubah z-index layering)
+    // Tampilkan layer AR
     $('#screen-chat').hidden = true;
+    
+    // Munculkan AR Wrapper
+    const wrapper = $('#scene-wrapper');
+    wrapper.style.visibility = 'visible';
+    wrapper.style.zIndex = '100';
+    
     $('#ar-ui-container').hidden = false;
     
     // Reset State
@@ -464,13 +464,9 @@
     $('#arHint').hidden = false;
     $('#arHint').textContent = "Memuat AR...";
 
-    // Masuk AR 
     const scene = document.querySelector('a-scene');
-    if (scene.hasLoaded) { 
-      scene.enterAR(); 
-    } else { 
-      scene.addEventListener('loaded', () => scene.enterAR()); 
-    }
+    if (scene.hasLoaded) { scene.enterAR(); } 
+    else { scene.addEventListener('loaded', () => scene.enterAR()); }
   }
 
   $('#btnPlace').onclick = () => {
@@ -488,7 +484,7 @@
       $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        // Tampilkan Teks 3D Melayang
+        // Tampilkan Teks 3D
         textEl.setAttribute('text', 'value', currentPayload.text);
         bubble.setAttribute('visible', 'true');
         
@@ -503,12 +499,15 @@
     }
   };
 
-  // Event saat WebXR ditutup (Back dari AR)
+  // Saat keluar AR, sembunyikan kembali layer 3D
   document.querySelector('a-scene').addEventListener('exit-vr', function () {
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
     
-    // Sembunyikan UI AR, Munculkan Layar Chat
+    const wrapper = $('#scene-wrapper');
+    wrapper.style.visibility = 'hidden';
+    wrapper.style.zIndex = '-100';
+    
     $('#ar-ui-container').hidden = true;
     $('#screen-chat').hidden = false;
   });
