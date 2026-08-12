@@ -9,8 +9,8 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   
-  <!-- Mesin Animasi untuk menjalankan animation-mixer -->
-  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
+  <!-- Mesin Animasi (Diperbarui ke v7.2.0 agar lebih stabil) -->
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
   <style>
     /* ============ UI/UX REDESIGN: GLASSMORPHISM ============ */
@@ -202,44 +202,46 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Pembungkus Utama (Memisahkan skala Naga dan UI agar tidak bertabrakan) -->
-    <a-entity id="dragon-entity" visible="false">
+    <!-- Pembungkus Utama (Titik tengah berada di permukaan lantai) -->
+    <a-entity id="dragon-entity" visible="false" position="0 0 0">
         
       <!-- Wrapper Khusus Efek Melayang Naik-Turun (Membawa Naga & Teks UI sekaligus) -->
-      <a-entity animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
+      <!-- Mengambang dari ketinggian 20cm ke 28cm dari lantai -->
+      <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.28 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
         
-        <!-- 3D Model Naga: Posisinya dinaikkan ke Y=0.4 agar berada tepat di tengah -->
+        <!-- 3D Model Naga -->
+        <!-- Panggilan animation-mixer dibuat kosong agar otomatis memutar semua animasi yang ada -->
         <a-entity 
           gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
           scale="0.002 0.002 0.002" 
-          position="0 0.4 0"
-          animation-mixer="clip: Take 001_Skeleton; loop: repeat">
+          position="0 0 0"
+          animation-mixer>
         </a-entity>
         
         <!-- 3D Text & Tombol Melayang -->
         <a-entity 
           id="dragon-bubble"
-          position="0 0.4 0"
+          position="0 0 0"
           look-at="[camera]"
           visible="false">
           
-          <!-- Teks ditaruh tinggi di ATAS naga -->
+          <!-- Teks ditaruh di ATAS kepala naga -->
           <a-entity 
             id="dragon-text" 
             text="value: ...; font: roboto; align: center; width: 0.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
-            position="0 0.4 0">
+            position="0 0.25 0">
           </a-entity>
           
-          <!-- Tombol ditaruh cukup jauh di BAWAH naga -->
-          <a-entity id="dragon-action-btn" position="0 -0.3 0" visible="false">
+          <!-- Tombol ditaruh di BAWAH kaki naga -->
+          <a-entity id="dragon-action-btn" position="0 -0.15 0" visible="false">
             <!-- Badan Kapsul -->
-            <a-plane id="btn-body" width="0.2" height="0.06" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
+            <a-plane id="btn-body" width="0.24" height="0.08" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
             <!-- Lengkungan Kiri -->
-            <a-circle id="btn-left" radius="0.03" position="-0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <a-circle id="btn-left" radius="0.04" position="-0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
             <!-- Lengkungan Kanan -->
-            <a-circle id="btn-right" radius="0.03" position="0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <a-circle id="btn-right" radius="0.04" position="0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
             <!-- Teks Tombol -->
-            <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 0.4; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
+            <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 0.5; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
           </a-entity>
           
         </a-entity>
