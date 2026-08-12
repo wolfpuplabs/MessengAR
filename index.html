@@ -5,9 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>Stick-AR Courier (WebXR)</title>
 
+  <!-- A-Frame Murni & Look-At Component untuk 3D Text -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   
+  <!-- Mesin Animasi (Diperbarui ke v7.2.0) -->
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
   <style>
@@ -98,6 +100,7 @@
 </head>
 <body>
 
+<!-- CHAT SCREEN -->
 <div id="screen-chat" class="screen">
   <header>
     <button id="btnClear" class="iconbtn" style="font-size: 16px;" title="Bersihkan Obrolan">🗑️</button>
@@ -123,6 +126,7 @@
   </div>
 </div>
 
+<!-- SHARE MODAL -->
 <div id="screen-share" class="screen overlay" hidden>
   <div class="glass-panel">
     <h2 id="shareTitleUI">Pesan Siap Terbang! ✨</h2>
@@ -136,6 +140,7 @@
   </div>
 </div>
 
+<!-- INCOMING MODAL -->
 <div id="screen-incoming" class="screen overlay" hidden>
   <div class="glass-panel">
     <h2 id="incTitleUI">Courier Tiba!</h2>
@@ -145,6 +150,7 @@
   </div>
 </div>
 
+<!-- NAME MODAL -->
 <div id="nameModal" class="screen overlay" hidden>
   <div class="glass-panel">
     <h2 id="nameTitleUI">Selamat Datang</h2>
@@ -154,10 +160,13 @@
   </div>
 </div>
 
+<!-- TOAST -->
 <div id="toast" hidden></div>
 
+<!-- AUDIO UTILITY (Hidden) -->
 <audio id="arMessageAudio" hidden></audio>
 
+<!-- WEBXR DOM OVERLAY UI -->
 <div id="ar-ui-container" hidden>
   <div class="ar-top">
     <button id="btnBackAR" class="iconbtn">‹</button>
@@ -174,6 +183,7 @@
   </div>
 </div>
 
+<!-- A-FRAME SCENE -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
   <a-scene 
     webxr="optionalFeatures: hit-test"
@@ -193,10 +203,13 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
+    <!-- Pembungkus Utama (Titik tengah berada di permukaan lantai) -->
     <a-entity id="dragon-entity" visible="false" position="0 0 0">
         
+      <!-- Wrapper Khusus Efek Melayang Naik-Turun -->
       <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.28 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
         
+        <!-- 3D Model Naga -->
         <a-entity 
           gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
           scale="0.002 0.002 0.002" 
@@ -204,30 +217,47 @@
           animation-mixer>
         </a-entity>
         
+        <!-- Wrapper UI yang selalu menghadap Kamera -->
         <a-entity look-at="[camera]">
           
+          <!-- BALON TEKS ROUNDED BOX (Posisi dinamis diatur via JavaScript) -->
           <a-entity 
             id="dragon-bubble"
-            position="0 0.35 0"
+            position="0 0.45 0"
             visible="false">
             
-            <a-entity position="0 0 -0.01">
-              <a-plane id="bubble-bg-plane" width="0.4" height="0.15" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.75"></a-plane>
-              <a-circle id="bubble-bg-left" radius="0.075" position="-0.2 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.75; segments: 32"></a-circle>
-              <a-circle id="bubble-bg-right" radius="0.075" position="0.2 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.75; segments: 32"></a-circle>
+            <!-- Background Balon Speech Bubble (Rounded Box + Tail) -->
+            <a-entity id="bubble-bg" position="0 0 -0.01">
+              <!-- Kotak Utama -->
+              <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
+              <!-- Kotak Tambahan untuk sudut membulat -->
+              <a-plane id="bg-cross" width="0.72" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
+              <!-- 4 Sudut (Radius statis 0.04) -->
+              <a-circle id="bg-tl" radius="0.04" position="-0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <a-circle id="bg-tr" radius="0.04" position="0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <a-circle id="bg-bl" radius="0.04" position="-0.36 -0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <a-circle id="bg-br" radius="0.04" position="0.36 -0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <!-- Ekor Balon Obrolan -->
+              <a-triangle id="bg-tail" vertex-a="0 -0.04 0" vertex-b="-0.05 0.02 0" vertex-c="0.05 0.02 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8" position="0 -0.1 0"></a-triangle>
             </a-entity>
 
+            <!-- Teks -->
             <a-entity 
               id="dragon-text" 
-              text="value: ...; font: roboto; align: center; anchor: center; baseline: center; width: 0.85; wrapCount: 22; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.05" 
+              text="value: ...; font: roboto; align: center; anchor: center; baseline: center; width: 0.85; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.05" 
               position="0 0 0">
             </a-entity>
           </a-entity>
           
+          <!-- TOMBOL REPLY (Tetap di bawah kaki naga Y=-0.15) -->
           <a-entity id="dragon-action-btn" position="0 -0.15 0" visible="false">
+            <!-- Badan Kapsul -->
             <a-plane id="btn-body" width="0.24" height="0.08" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
+            <!-- Lengkungan Kiri -->
             <a-circle id="btn-left" radius="0.04" position="-0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <!-- Lengkungan Kanan -->
             <a-circle id="btn-right" radius="0.04" position="0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <!-- Teks Tombol -->
             <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; anchor: center; baseline: center; width: 0.5; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
           </a-entity>
 
@@ -483,7 +513,7 @@
     }).catch(() => toast(t.toastMicDeny));
   };
 
-  /* ================= SEND LOGIC (IS.GD INTEGRATION) ================= */
+  /* ================= SEND LOGIC ================= */
   $('#btnSend').onclick = async () => {
     const t = i18n[lang];
     const text = $('#txt').value.trim();
@@ -513,7 +543,7 @@
         lastShare = shortUrl;
       }
     } catch (err) {
-      console.warn("Gagal membuat link pendek, fallback ke link panjang.", err);
+      console.warn("Gagal membuat link pendek.", err);
     }
     
     $('#shareLink').textContent = lastShare;
@@ -564,7 +594,7 @@
     const audioEl = $('#arMessageAudio');
     if (payload.audio) {
       audioEl.src = payload.audio;
-      audioEl.play().catch(() => toast('Audio blocked by device'));
+      audioEl.play().catch(() => toast('Audio blocked'));
       audioEl.onended = onFinish;
     } else if ('speechSynthesis' in window) {
       const u = new SpeechSynthesisUtterance(payload.text);
@@ -578,7 +608,6 @@
   }
 
   /* ================= WEBXR HIT-TEST ================= */
-  
   window.addEventListener('touchstart', (e) => {
     const scene = document.querySelector('a-scene');
     if (scene && scene.is('ar-mode')) {
@@ -604,22 +633,6 @@
       this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
         
-        session.addEventListener('select', () => {
-          const actionBtn = document.getElementById('dragon-action-btn');
-          if (actionBtn && actionBtn.getAttribute('visible')) {
-            if (replyAllowed) {
-              $('#btnReply').click();
-            } else {
-              $('#btnBack').click();
-            }
-            return; 
-          }
-          const reticle = document.getElementById('reticle');
-          if (reticle.getAttribute('visible')) {
-            $('#btnPlace').click();
-          }
-        });
-
         session.requestReferenceSpace('viewer').then((space) => {
           this.viewerSpace = space;
           session.requestHitTestSource({ space: this.viewerSpace }).then((hitTestSource) => {
@@ -678,7 +691,42 @@
     }
   });
 
-  /* ================= AR LOGIC ================= */
+  /* ================= AR LOGIC & RESPONSIVE BUBBLE ================= */
+  
+  // Fungsi Cerdas: Menghitung pembungkusan kata persis seperti engine 3D
+  function calculateWrappedLines(str, maxChars = 26) {
+    const paragraphs = str.split('\n');
+    let lineCount = 0;
+    let maxLen = 0;
+    
+    paragraphs.forEach(para => {
+      if (para.length === 0) { lineCount++; return; }
+      const words = para.split(' ');
+      let currentLineLen = 0;
+      
+      words.forEach(word => {
+        if (currentLineLen === 0) {
+          currentLineLen = word.length;
+        } else if (currentLineLen + 1 + word.length <= maxChars) {
+          currentLineLen += 1 + word.length;
+        } else {
+          lineCount++;
+          maxLen = Math.max(maxLen, currentLineLen);
+          currentLineLen = word.length;
+        }
+      });
+      if (currentLineLen > 0) {
+        lineCount++;
+        maxLen = Math.max(maxLen, currentLineLen);
+      }
+    });
+    
+    return { 
+      lines: Math.max(1, lineCount), 
+      maxLen: Math.max(1, Math.min(maxLen, maxChars)) 
+    };
+  }
+
   function openAR(payload) {
     currentPayload = payload;
     replyAllowed = payload && payload.from && payload.from !== myName;
@@ -708,35 +756,6 @@
     else { scene.addEventListener('loaded', () => scene.enterAR()); }
   }
 
-  // Fungsi Kalkulator Kata Presisi untuk Responsive Bubble
-  function calculateWrappedLines(str, maxChars = 22) {
-    const paragraphs = str.split('\n');
-    let lineCount = 0;
-    let maxLen = 0;
-    
-    paragraphs.forEach(para => {
-      if (para.length === 0) { lineCount++; return; }
-      const words = para.split(' ');
-      let currentLineLen = 0;
-      words.forEach(word => {
-        if (currentLineLen === 0) {
-          currentLineLen = word.length;
-        } else if (currentLineLen + 1 + word.length <= maxChars) {
-          currentLineLen += 1 + word.length;
-        } else {
-          lineCount++;
-          maxLen = Math.max(maxLen, currentLineLen);
-          currentLineLen = word.length;
-        }
-      });
-      if (currentLineLen > 0) {
-        lineCount++;
-        maxLen = Math.max(maxLen, currentLineLen);
-      }
-    });
-    return { lines: Math.max(1, lineCount), maxLen: Math.max(1, maxLen) };
-  }
-
   $('#btnPlace').onclick = () => {
     const reticle = document.getElementById('reticle');
     const dragon = document.getElementById('dragon-entity');
@@ -755,29 +774,48 @@
         const textStr = currentPayload.text || "";
         textEl.setAttribute('text', 'value', textStr);
         
-        // ==========================================
-        // FITUR BARU: RESPONSIVE BALLOON BUBBLE v2
-        // ==========================================
-        const { lines, maxLen } = calculateWrappedLines(textStr, 22);
+        // ==============================================================
+        // FITUR BARU: RESPONSIVE ROUNDED BOX BUBBLE & LIFT-UP SYSTEM
+        // ==============================================================
+        const maxWrap = 26; // Jumlah karakter pembungkus dari atribut text 3D
+        const baseWidth = 0.85; // Lebar patokan komponen text 3D
+        const { lines, maxLen } = calculateWrappedLines(textStr, maxWrap);
         
-        // Perhitungan skala presisi berdasarkan karakter A-Frame
-        const charWidth = 0.0386;
-        const dynWidth = Math.max(0.12, (maxLen * charWidth) + 0.06);
+        // Konstanta Skala Teks 3D
+        const charWidth = baseWidth / maxWrap; 
+        const lineHeight = 0.055; 
+        const r = 0.04; // Radius sudut membulat (Rounded Corner)
         
-        const lineHeight = 0.055;
-        const dynHeight = Math.max(0.10, (lines * lineHeight) + 0.04);
-        const dynRadius = dynHeight / 2;
+        // Menambahkan margin padding agar teks tidak mepet ujung kotak
+        const paddingX = 0.12; 
+        const paddingY = 0.08;
         
-        // Terapkan dimensi ke background balon
-        document.getElementById('bubble-bg-plane').setAttribute('width', dynWidth);
-        document.getElementById('bubble-bg-plane').setAttribute('height', dynHeight);
+        // Lebar & Tinggi akhir Background
+        const dynWidth = Math.max(0.2, (maxLen * charWidth) + paddingX);
+        const dynHeight = Math.max(0.1, (lines * lineHeight) + paddingY);
         
-        document.getElementById('bubble-bg-left').setAttribute('radius', dynRadius);
-        document.getElementById('bubble-bg-left').setAttribute('position', `${-dynWidth / 2} 0 0`);
+        // Menerapkan skala ke komponen Rounded Box
+        document.getElementById('bg-main').setAttribute('width', dynWidth);
+        document.getElementById('bg-main').setAttribute('height', dynHeight - (2 * r));
         
-        document.getElementById('bubble-bg-right').setAttribute('radius', dynRadius);
-        document.getElementById('bubble-bg-right').setAttribute('position', `${dynWidth / 2} 0 0`);
-        // ==========================================
+        document.getElementById('bg-cross').setAttribute('width', dynWidth - (2 * r));
+        document.getElementById('bg-cross').setAttribute('height', dynHeight);
+        
+        const offsetX = (dynWidth / 2) - r;
+        const offsetY = (dynHeight / 2) - r;
+        
+        document.getElementById('bg-tl').setAttribute('position', `${-offsetX} ${offsetY} 0`);
+        document.getElementById('bg-tr').setAttribute('position', `${offsetX} ${offsetY} 0`);
+        document.getElementById('bg-bl').setAttribute('position', `${-offsetX} ${-offsetY} 0`);
+        document.getElementById('bg-br').setAttribute('position', `${offsetX} ${-offsetY} 0`);
+        
+        // Memasang buntut segitiga obrolan tepat di garis batas bawah
+        document.getElementById('bg-tail').setAttribute('position', `0 ${-dynHeight / 2} 0`);
+        
+        // Mendorong SELURUH balon teks ke atas agar bagian ekornya tidak pernah menabrak kepala naga
+        const dragonHeadY = 0.35; 
+        bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`);
+        // ==============================================================
 
         bubble.setAttribute('visible', 'true');
         
