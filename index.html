@@ -71,7 +71,6 @@
     .overlay h2 { margin: 0 0 10px 0; font-size: 22px; color: #fff; }
     .overlay p { margin: 0 0 20px 0; color: #c5c6c7; font-size: 14.5px; line-height: 1.5; }
     
-    /* MODIFIKASI: Menambahkan batas tinggi dan scroll agar UI aman dari link yang sangat panjang */
     #shareLink { 
       background: #0b0c10; 
       border: 1px solid #1f2833; 
@@ -483,7 +482,7 @@
     }).catch(() => toast(t.toastMicDeny));
   };
 
-  /* ================= SEND LOGIC (IS.GD INTEGRATION) ================= */
+  /* ================= SEND LOGIC ================= */
   $('#btnSend').onclick = async () => {
     const t = i18n[lang];
     const text = $('#txt').value.trim();
@@ -764,6 +763,11 @@
     
     if (replyTarget) {
       sessionStorage.setItem('sar_replyTo', replyTarget);
+    }
+    
+    // Hapus hash dari URL agar tidak memicu layar "Courier Tiba" lagi saat reload
+    if (window.location.hash) {
+      history.replaceState(null, null, window.location.pathname + window.location.search);
     }
     
     window.location.reload();
