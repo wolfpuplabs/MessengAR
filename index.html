@@ -13,7 +13,7 @@
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
   <style>
-    /* ============ UI/UX REDESIGN: GLASSMORPHISM ============ */
+    /* ============ UI/UX REDESIGN: GLASSMORPHISM & PREMIUM BUBBLES ============ */
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
     
@@ -39,52 +39,73 @@
       display: flex; align-items: center; justify-content: space-between; 
       padding: 16px 20px; background: rgba(11, 12, 16, 0.8);
       backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      z-index: 10;
     }
     .logo { font-size: 24px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     
     .primary-btn {
       background: linear-gradient(135deg, #45a29e, #1f2833);
       color: #fff; border: none; border-radius: 16px; padding: 14px 24px;
-      font-weight: 700; font-size: 15px; cursor: pointer; transition: transform 0.2s;
+      font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease;
       box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3);
       pointer-events: auto;
     }
-    .primary-btn:active { transform: scale(0.96); }
-    .iconbtn { width: 44px; height: 44px; border-radius: 14px; border: none; background: #1f2833; color: #66fcf1; font-size: 18px; cursor: pointer; flex: none; pointer-events: auto; display: flex; align-items: center; justify-content: center;}
+    .primary-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(69, 162, 158, 0.2); }
     
-    #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-    .bub { max-width: 80%; padding: 12px 16px; border-radius: 20px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .iconbtn { 
+      width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(102, 252, 241, 0.2); 
+      background: #1f2833; color: #66fcf1; font-size: 18px; cursor: pointer; flex: none; 
+      pointer-events: auto; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .iconbtn:active { transform: scale(0.92); background: #2f3e4f; }
+    
+    /* CHAT BUBBLES & WRAPPERS */
+    #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+    
+    .msg-wrap { display: flex; align-items: flex-end; gap: 8px; width: 100%; margin-bottom: 8px; position: relative; }
+    .msg-wrap.out { justify-content: flex-end; }
+    .msg-wrap.in { justify-content: flex-start; }
+    .msg-wrap.evt { justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px; }
+    
+    .bub { max-width: 75%; padding: 14px 18px; border-radius: 20px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.25); transition: transform 0.2s ease; }
     .bub small { display: block; opacity: 0.5; font-size: 11px; margin-top: 6px; }
-    .bub audio { max-width: 100%; display: block; margin-top: 8px; height: 36px; }
-    .out { align-self: flex-end; background: #1f2833; border-bottom-right-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.2); }
-    .in { align-self: flex-start; background: #202428; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.05); }
-    .event { align-self: center; background: rgba(69, 162, 158, 0.15); border: 1px dashed #45a29e; border-radius: 999px; padding: 8px 16px; font-size: 12px; cursor: pointer; color: #66fcf1; }
+    .bub audio { max-width: 100%; display: block; margin-top: 8px; height: 36px; outline: none; border-radius: 18px; }
     
-    .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.9); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); }
+    .out-bub { background: linear-gradient(135deg, #1f2833, #161c24); border-bottom-right-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.3); }
+    .in-bub { background: #202428; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.08); }
+    
+    .bub-event { background: rgba(69, 162, 158, 0.15); border: 1px dashed #45a29e; border-radius: 999px; padding: 10px 20px; font-size: 12px; cursor: pointer; color: #66fcf1; transition: all 0.2s ease; box-shadow: 0 0 10px rgba(69, 162, 158, 0.1); }
+    .bub-event:active { transform: scale(0.95); background: rgba(69, 162, 158, 0.25); }
+    
+    /* INDIVIDUAL DELETE BUTTON */
+    .del-btn { 
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ff6b6b; 
+      font-size: 12px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+      transition: all 0.2s ease; width: 28px; height: 28px; flex-shrink: 0; opacity: 0.5; margin-bottom: 6px;
+    }
+    .del-btn:hover, .del-btn:active { opacity: 1; background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; transform: scale(1.1); }
+    .evt .del-btn { margin-bottom: 0; }
+
+    .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.95); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10; }
     .composer-inputs { display: flex; gap: 10px; }
-    #txt { flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px; background: #1f2833; color: #fff; font-size: 15px; outline: none; }
-    #txt:focus { border-color: #45a29e; }
+    #txt { flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px 18px; background: #1f2833; color: #fff; font-size: 15px; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+    #txt:focus { border-color: #45a29e; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2), 0 0 8px rgba(69, 162, 158, 0.3); }
     
-    #replyBanner { padding: 8px 16px; background: #2f6f5f; font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px; color: #fff; }
+    #replyBanner { padding: 10px 16px; background: linear-gradient(90deg, #2f6f5f, #1f2833); font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px; color: #fff; border: 1px solid rgba(102, 252, 241, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     
-    .mic-on { background: #e33 !important; color: #fff !important; animation: pulse 1s infinite; }
-    @keyframes pulse { 50% { transform: scale(1.12); } }
+    .mic-on { background: #e33 !important; color: #fff !important; border-color: #ff6b6b !important; animation: pulse 1s infinite; box-shadow: 0 0 15px rgba(238, 51, 51, 0.5) !important; }
+    @keyframes pulse { 50% { transform: scale(1.08); } }
 
     .overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(8px); z-index: 30; }
     .overlay h2 { margin: 0 0 10px 0; font-size: 22px; color: #fff; }
     .overlay p { margin: 0 0 20px 0; color: #c5c6c7; font-size: 14.5px; line-height: 1.5; }
     
     #shareLink { 
-      background: #0b0c10; 
-      border: 1px solid #1f2833; 
-      border-radius: 12px; 
-      padding: 12px; 
-      font-size: 12px; 
-      color: #66fcf1; 
-      word-break: break-all; 
-      margin-bottom: 20px; 
-      max-height: 100px; 
-      overflow-y: auto; 
+      background: #0b0c10; border: 1px solid rgba(102, 252, 241, 0.3); border-radius: 12px; 
+      padding: 14px; font-size: 13px; color: #66fcf1; word-break: break-all; margin-bottom: 20px; 
+      max-height: 100px; overflow-y: auto; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
     }
     
     .row { display: flex; gap: 12px; justify-content: center; }
@@ -92,10 +113,10 @@
     /* AR DOM OVERLAY UI */
     #ar-ui-container { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
     .ar-top { display: flex; justify-content: space-between; pointer-events: auto; }
-    #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none;}
+    #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
     #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
     
-    #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.9); border: 1px solid #45a29e; border-radius: 999px; padding: 10px 20px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 15px rgba(0,0,0,0.4); }
+    #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.95); border: 1px solid #45a29e; border-radius: 999px; padding: 12px 24px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 20px rgba(0,0,0,0.5); font-weight: 600; }
   </style>
 </head>
 <body>
@@ -115,7 +136,7 @@
   <div class="composer">
     <div id="replyBanner" hidden>
       <span id="replyLabel"></span>
-      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;" id="btnCancelReply">✕</button>
+      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;border:none;" id="btnCancelReply">✕</button>
     </div>
     
     <div class="composer-inputs">
@@ -135,7 +156,7 @@
     <div class="row">
       <button id="btnShare" class="primary-btn">Share</button>
       <button id="btnCopy" class="primary-btn">Copy</button>
-      <button id="btnShareBack" class="iconbtn">✕</button>
+      <button id="btnShareBack" class="iconbtn" style="border:none;">✕</button>
     </div>
   </div>
 </div>
@@ -146,7 +167,7 @@
     <h2 id="incTitleUI">Courier Tiba!</h2>
     <p id="incFrom"></p>
     <button id="btnAccept" class="primary-btn">Buka di AR 👁️</button>
-    <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%;">Tutup</button>
+    <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%; border:none;">Tutup</button>
   </div>
 </div>
 
@@ -155,7 +176,7 @@
   <div class="glass-panel">
     <h2 id="nameTitleUI">Selamat Datang</h2>
     <p id="nameDescUI">Masukkan nama kamu sebagai pengirim:</p>
-    <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center;">
+    <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center; outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
     <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai ✨</button>
   </div>
 </div>
@@ -228,11 +249,8 @@
             
             <!-- Background Balon Speech Bubble (Rounded Box + Tail) -->
             <a-entity id="bubble-bg" position="0 0 -0.01">
-              <!-- Kotak Utama -->
               <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
-              <!-- Kotak Tambahan untuk sudut membulat -->
               <a-plane id="bg-cross" width="0.72" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
-              <!-- 4 Sudut -->
               <a-circle id="bg-tl" radius="0.04" position="-0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
               <a-circle id="bg-tr" radius="0.04" position="0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
               <a-circle id="bg-bl" radius="0.04" position="-0.36 -0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
@@ -317,6 +335,7 @@
       shareText: "Ada pesan AR untukmu!",
       incFrom: "Pesan rahasia dari ",
       confirmClear: "Yakin ingin menghapus semua pesan?",
+      confirmDelMsg: "Hapus pesan ini?",
       genLink: "Membuat link pendek... ⏳"
     },
     en: {
@@ -356,6 +375,7 @@
       shareText: "There's an AR message for you!",
       incFrom: "Secret message from ",
       confirmClear: "Are you sure you want to clear the chat?",
+      confirmDelMsg: "Delete this message?",
       genLink: "Generating short link... ⏳"
     }
   };
@@ -434,17 +454,22 @@
   function renderMsgs() {
     const t = i18n[lang];
     const box = $('#msgs'); box.innerHTML = '';
+    
     msgs.forEach((m, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'msg-wrap ' + (m.dir === 'out' ? 'out' : (m.kind === 'event' ? 'evt' : 'in'));
+
       const d = document.createElement('div');
       if (m.kind === 'event') {
-        d.className = 'event'; d.dataset.i = i;
+        d.className = 'bub-event'; 
+        d.dataset.i = i;
         const pObj = Array.isArray(m.payload) ? { from: m.payload[2], to: m.payload[3] } : m.payload;
         const actionTxt = m.dir === 'out' 
           ? t.msgSent + (pObj.to ? (lang === 'id' ? ' ke ' : ' to ') + pObj.to : '') 
           : t.msgArr + pObj.from;
         d.textContent = actionTxt + ' — Tap';
       } else {
-        d.className = 'bub ' + (m.dir === 'out' ? 'out' : 'in');
+        d.className = 'bub ' + (m.dir === 'out' ? 'out-bub' : 'in-bub');
         let html = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + m.text;
         if (m.payload && m.payload.audio) {
             html += '<audio controls src="' + m.payload.audio + '"></audio>';
@@ -452,13 +477,40 @@
         html += '<small>' + new Date(m.t).toLocaleTimeString() + '</small>';
         d.innerHTML = html;
       }
-      box.appendChild(d);
+
+      // Tombol Hapus per pesan individu
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.innerHTML = '🗑️';
+      delBtn.title = "Delete";
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        if(confirm(t.confirmDelMsg)) {
+          msgs.splice(i, 1);
+          store.set('sar_msgs', JSON.stringify(msgs));
+          renderMsgs();
+        }
+      };
+
+      // Urutan susunan berdasarkan posisi (kanan = out, kiri = in)
+      if (m.dir === 'out') {
+        wrap.appendChild(delBtn);
+        wrap.appendChild(d);
+      } else if (m.kind === 'event' && m.dir !== 'out') {
+        wrap.appendChild(d);
+        wrap.appendChild(delBtn);
+      } else {
+        wrap.appendChild(d);
+        wrap.appendChild(delBtn);
+      }
+
+      box.appendChild(wrap);
     });
     box.scrollTop = box.scrollHeight;
   }
 
   $('#msgs').addEventListener('click', e => {
-    const el = e.target.closest('.event');
+    const el = e.target.closest('.bub-event');
     if (!el) return;
     const m = msgs[el.dataset.i];
     if (m && m.payload) {
@@ -539,7 +591,7 @@
         lastShare = shortUrl;
       }
     } catch (err) {
-      console.warn("Gagal membuat link pendek.", err);
+      console.warn("Gagal membuat link pendek, fallback ke link panjang.", err);
     }
     
     $('#shareLink').textContent = lastShare;
@@ -586,8 +638,6 @@
   };
 
   /* ================= TTS & AUDIO PLAYBACK (PREMIUM VOICES) ================= */
-  
-  // Mencari dan mendaftar seluruh suara dari sistem perangkat
   let availableVoices = [];
   function populateVoices() {
     availableVoices = window.speechSynthesis.getVoices();
@@ -607,11 +657,9 @@
       const targetLang = (lang === 'id') ? 'id-ID' : 'en-US';
       u.lang = targetLang; 
       
-      // Sedikit melambatkan tempo agar tidak terlalu kaku seperti robot
       u.rate = 0.95; 
       u.pitch = 1.0;
       
-      // Mencari suara "Premium" atau "Enhanced" dari sistem (khususnya untuk iOS/Mac)
       if (availableVoices.length === 0) populateVoices();
       
       const langVoices = availableVoices.filter(v => v.lang.startsWith(targetLang.substring(0, 2)));
