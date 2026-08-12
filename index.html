@@ -41,8 +41,16 @@
       backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05);
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       z-index: 10;
+      position: relative; /* Perbaikan agar elemen absolut bekerja */
     }
-    .logo { font-size: 24px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo { 
+      font-size: 24px; font-weight: 800; margin: 0; 
+      background: linear-gradient(90deg, #66fcf1, #45a29e); 
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+      position: absolute; /* Perbaikan agar logo selalu di tengah layar */
+      left: 50%;
+      transform: translateX(-50%);
+    }
     
     .primary-btn {
       background: linear-gradient(135deg, #45a29e, #1f2833);
@@ -55,7 +63,7 @@
     
     .iconbtn { 
       width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(102, 252, 241, 0.2); 
-      background: #1f2833; color: #66fcf1; font-size: 18px; cursor: pointer; flex: none; 
+      background: #1f2833; color: #66fcf1; font-size: 14px; font-weight: bold; cursor: pointer; flex: none; 
       pointer-events: auto; display: flex; align-items: center; justify-content: center;
       transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
@@ -82,7 +90,7 @@
     /* INDIVIDUAL DELETE BUTTON */
     .del-btn { 
       background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ff6b6b; 
-      font-size: 12px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+      font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
       transition: all 0.2s ease; width: 28px; height: 28px; flex-shrink: 0; opacity: 0.5; margin-bottom: 6px;
     }
     .del-btn:hover, .del-btn:active { opacity: 1; background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; transform: scale(1.1); }
@@ -124,11 +132,11 @@
 <!-- CHAT SCREEN -->
 <div id="screen-chat" class="screen">
   <header>
-    <button id="btnClear" class="iconbtn" style="font-size: 16px;" title="Bersihkan Obrolan">🗑️</button>
+    <button id="btnClear" class="iconbtn" title="Bersihkan Obrolan">Del</button>
     <h1 class="logo">Stick-AR</h1>
     <div style="display: flex; gap: 8px;">
-      <button id="btnLang" class="iconbtn" style="font-size: 13px; font-weight: bold; width: 36px; height: 36px;" title="Ganti Bahasa">ID</button>
-      <button id="btnName" class="iconbtn" style="width: 36px; height: 36px;" title="Ganti Nama">✎</button>
+      <button id="btnLang" class="iconbtn" style="width: 36px; height: 36px;" title="Ganti Bahasa">ID</button>
+      <button id="btnName" class="iconbtn" style="width: 36px; height: 36px; font-size: 12px;" title="Ganti Nama">Edit</button>
     </div>
   </header>
   <div id="msgs"></div>
@@ -136,11 +144,11 @@
   <div class="composer">
     <div id="replyBanner" hidden>
       <span id="replyLabel"></span>
-      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;border:none;" id="btnCancelReply">✕</button>
+      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;border:none;" id="btnCancelReply">X</button>
     </div>
     
     <div class="composer-inputs">
-      <button id="btnMic" class="iconbtn" title="Rekam Suara">🎤</button>
+      <button id="btnMic" class="iconbtn" title="Rekam Suara">Mic</button>
       <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
       <button id="btnSend" class="primary-btn">Kirim</button>
     </div>
@@ -150,13 +158,13 @@
 <!-- SHARE MODAL -->
 <div id="screen-share" class="screen overlay" hidden>
   <div class="glass-panel">
-    <h2 id="shareTitleUI">Pesan Siap Terbang! ✨</h2>
+    <h2 id="shareTitleUI">Pesan Siap Terbang!</h2>
     <p id="shareDescUI">Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.</p>
     <div id="shareLink"></div>
     <div class="row">
       <button id="btnShare" class="primary-btn">Share</button>
       <button id="btnCopy" class="primary-btn">Copy</button>
-      <button id="btnShareBack" class="iconbtn" style="border:none;">✕</button>
+      <button id="btnShareBack" class="iconbtn" style="border:none;">X</button>
     </div>
   </div>
 </div>
@@ -166,7 +174,7 @@
   <div class="glass-panel">
     <h2 id="incTitleUI">Courier Tiba!</h2>
     <p id="incFrom"></p>
-    <button id="btnAccept" class="primary-btn">Buka di AR 👁️</button>
+    <button id="btnAccept" class="primary-btn">Buka di AR</button>
     <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%; border:none;">Tutup</button>
   </div>
 </div>
@@ -177,7 +185,7 @@
     <h2 id="nameTitleUI">Selamat Datang</h2>
     <p id="nameDescUI">Masukkan nama kamu sebagai pengirim:</p>
     <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center; outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
-    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai ✨</button>
+    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai</button>
   </div>
 </div>
 
@@ -190,7 +198,7 @@
 <!-- WEBXR DOM OVERLAY UI -->
 <div id="ar-ui-container" hidden>
   <div class="ar-top">
-    <button id="btnBackAR" class="iconbtn">‹</button>
+    <button id="btnBackAR" class="iconbtn">&lt;</button>
     <h1 class="logo">Stick-AR</h1>
     <span style="width:44px"></span>
   </div>
@@ -302,17 +310,17 @@
       btnSend: "Kirim",
       plcTxt: "Ketik pesan...",
       replyLabel: "Membalas ke ",
-      titleShare: "Pesan Siap Terbang! ✨",
+      titleShare: "Pesan Siap Terbang!",
       descShare: "Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.",
       btnShare: "Bagikan",
       btnCopy: "Salin",
       titleInc: "Kurir Tiba!",
-      btnAccept: "Buka di AR 👁️",
+      btnAccept: "Buka di AR",
       btnIncLater: "Tutup",
       titleName: "Selamat Datang",
       descName: "Masukkan nama kamu sebagai pengirim:",
       plcName: "Nama...",
-      btnNameSave: "Mulai ✨",
+      btnNameSave: "Mulai",
       arHintScan: "Pindai lantai hingga cincin putih muncul.",
       arHintFound: "Lantai ditemukan! Sentuh layar untuk memunculkan pesan.",
       arHintSearch: "Mencari lantai/meja...",
@@ -321,10 +329,10 @@
       btnReply: "Balas Pesan",
       btnBack: "Kembali",
       toastName: "Halo, ",
-      toastClear: "Obrolan dibersihkan 🧹",
+      toastClear: "Obrolan dibersihkan",
       toastMicErr: "Mic tidak didukung",
-      toastMicAtt: "🎤 Suara terlampir",
-      toastMicRec: "Merekam... tap 🎤 untuk stop",
+      toastMicAtt: "Suara terlampir",
+      toastMicRec: "Merekam... tap Mic untuk stop",
       toastMicDeny: "Mic tidak diizinkan",
       toastEmpty: "Ketik pesan atau rekam suara dulu",
       toastCopy: "Link tersalin!",
@@ -342,17 +350,17 @@
       btnSend: "Send",
       plcTxt: "Type a message...",
       replyLabel: "Replying to ",
-      titleShare: "Message Ready! ✨",
+      titleShare: "Message Ready!",
       descShare: "Share this link with the recipient. When opened, the courier will appear in AR.",
       btnShare: "Share",
       btnCopy: "Copy",
       titleInc: "Courier Arrived!",
-      btnAccept: "Open in AR 👁️",
+      btnAccept: "Open in AR",
       btnIncLater: "Close",
       titleName: "Welcome",
       descName: "Enter your name as the sender:",
       plcName: "Name...",
-      btnNameSave: "Start ✨",
+      btnNameSave: "Start",
       arHintScan: "Scan the floor until a white ring appears.",
       arHintFound: "Floor found! Tap the screen to spawn the message.",
       arHintSearch: "Searching for floor/table...",
@@ -361,10 +369,10 @@
       btnReply: "Reply Message",
       btnBack: "Back",
       toastName: "Hello, ",
-      toastClear: "Chat cleared 🧹",
+      toastClear: "Chat cleared",
       toastMicErr: "Mic not supported",
-      toastMicAtt: "🎤 Voice attached",
-      toastMicRec: "Recording... tap 🎤 to stop",
+      toastMicAtt: "Voice attached",
+      toastMicRec: "Recording... tap Mic to stop",
       toastMicDeny: "Mic access denied",
       toastEmpty: "Type a message or record voice first",
       toastCopy: "Link copied!",
@@ -478,10 +486,10 @@
         d.innerHTML = html;
       }
 
-      // Tombol Hapus per pesan individu
+      // Tombol Hapus per pesan individu (Tanpa Emoji)
       const delBtn = document.createElement('button');
       delBtn.className = 'del-btn';
-      delBtn.innerHTML = '🗑️';
+      delBtn.innerHTML = 'X';
       delBtn.title = "Delete";
       delBtn.onclick = (e) => {
         e.stopPropagation();
