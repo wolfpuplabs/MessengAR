@@ -232,7 +232,6 @@
 
 <!-- A-FRAME SCENE -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
-  <!-- PERBAIKAN: Menambahkan dukungan dom-overlay di tag webxr agar tap di Android berfungsi normal -->
   <a-scene 
     webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container;"
     renderer="colorManagement: true"
@@ -696,7 +695,6 @@
   }
 
   /* ================= WEBXR HIT-TEST & INTERACTION ================= */
-  // PERBAIKAN: Fungsi penanganan sentuhan AR (baik untuk WebXR maupun fallback UI biasa)
   function handleARTap() {
     const scene = document.querySelector('a-scene');
     if (scene && scene.is('ar-mode')) {
@@ -725,7 +723,6 @@
       this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
         let session = this.el.sceneEl.renderer.xr.getSession();
         
-        // PERBAIKAN: Tangkap sentuhan layar langsung dari sesi WebXR (Solusi Chrome Android)
         session.addEventListener('select', handleARTap);
         
         session.requestReferenceSpace('viewer').then((space) => {
@@ -930,6 +927,7 @@
     }
   };
 
+  /* ================= FIX UTAMA: KELUAR DARI AR DAN HAPUS HASH ================= */
   const closeAR = (replyTarget = null) => { 
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
@@ -943,7 +941,8 @@
       sessionStorage.setItem('sar_replyTo', replyTarget);
     }
     
-    window.location.reload();
+    // Alih-alih reload, arahkan langsung ke root path (tanpa #hash)
+    window.location.replace(window.location.pathname);
   };
 
   $('#btnBackAR').onclick = () => closeAR();
@@ -961,8 +960,8 @@
     setReply(pendingReply);
     sessionStorage.removeItem('sar_replyTo'); 
     toast(i18n[lang].toastReply + pendingReply);
-    history.replaceState(null, null, window.location.pathname);
   } else {
+    // Modal kurir hanya akan muncul jika memang ada hash di URL saat pertama dibuka
     const initMatch = location.hash.match(/m=(.+)/);
     if (initMatch) { try { handlePayload(dec(initMatch[1])); } catch(e){} }
   }
