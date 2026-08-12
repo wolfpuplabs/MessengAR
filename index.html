@@ -10,59 +10,37 @@
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   
-  <!-- Pustaka Kompresi Pako (Gzip/Deflate) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+  <!-- Firebase SDK (Versi 8 - Paling stabil untuk Web murni tanpa bundler) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <!-- Komponen Naga Terbang Random -->
   <script>
     AFRAME.registerComponent('random-flight', {
       init: function () {
-        this.state = 'idle';
-        this.homePos = '0 0.2 0';
-        this.startIdle();
-
+        this.state = 'idle'; this.homePos = '0 0.2 0'; this.startIdle();
         this.flightTimer = setInterval(() => {
           const dragon = document.getElementById('dragon-entity');
           const isVisible = dragon ? dragon.getAttribute('visible') : false;
-          if ((isVisible === true || isVisible === 'true') && this.state === 'idle') {
-            this.flyRandomly();
-          }
+          if ((isVisible === true || isVisible === 'true') && this.state === 'idle') this.flyRandomly();
         }, 8000);
-
         this.el.addEventListener('animationcomplete__fly', (e) => {
-          if (this.state === 'flying') {
-            setTimeout(() => this.returnHome(), 1000);
-          } else if (this.state === 'returning') {
-            this.startIdle();
-          }
+          if (this.state === 'flying') setTimeout(() => this.returnHome(), 1000);
+          else if (this.state === 'returning') this.startIdle();
         });
       },
-      
       startIdle: function() {
-        this.state = 'idle';
-        this.el.removeAttribute('animation__fly');
-        this.el.setAttribute('animation__fly', {
-          property: 'position', from: '0 0.2 0', to: '0 0.28 0', dir: 'alternate', dur: 1500, loop: true, easing: 'easeInOutSine'
-        });
+        this.state = 'idle'; this.el.removeAttribute('animation__fly');
+        this.el.setAttribute('animation__fly', { property: 'position', from: '0 0.2 0', to: '0 0.28 0', dir: 'alternate', dur: 1500, loop: true, easing: 'easeInOutSine' });
       },
-      
       flyRandomly: function() {
-        this.state = 'flying';
-        this.el.removeAttribute('animation__fly');
-        const x = (Math.random() - 0.5) * 1.6; 
-        const y = 0.2 + (Math.random() * 0.6);
-        const z = (Math.random() - 0.5) * 1.6; 
-        this.el.setAttribute('animation__fly', {
-          property: 'position', to: `${x} ${y} ${z}`, dur: 3000, loop: false, easing: 'easeInOutQuad'
-        });
+        this.state = 'flying'; this.el.removeAttribute('animation__fly');
+        const x = (Math.random() - 0.5) * 1.6; const y = 0.2 + (Math.random() * 0.6); const z = (Math.random() - 0.5) * 1.6; 
+        this.el.setAttribute('animation__fly', { property: 'position', to: `${x} ${y} ${z}`, dur: 3000, loop: false, easing: 'easeInOutQuad' });
       },
-      
       returnHome: function() {
-        this.state = 'returning';
-        this.el.removeAttribute('animation__fly');
-        this.el.setAttribute('animation__fly', {
-          property: 'position', to: this.homePos, dur: 2500, loop: false, easing: 'easeInOutQuad'
-        });
+        this.state = 'returning'; this.el.removeAttribute('animation__fly');
+        this.el.setAttribute('animation__fly', { property: 'position', to: this.homePos, dur: 2500, loop: false, easing: 'easeInOutQuad' });
       }
     });
   </script>
@@ -174,7 +152,7 @@
   <div class="glass-panel">
     <h2 id="incTitleUI">Courier Tiba!</h2>
     <p id="incFrom"></p>
-    <button id="btnAccept" class="primary-btn">Buka di AR</button>
+    <button id="btnAccept" class="primary-btn" style="display: none;">Buka di AR</button>
     <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%; border:none;">Tutup</button>
   </div>
 </div>
@@ -243,43 +221,30 @@
 </div>
 
 <script>
+  /* ================= INISIALISASI FIREBASE ================= */
+  // ! PENTING: GANTI KODE DI BAWAH DENGAN FIREBASE CONFIG MILIKMU DARI TAHAP 1 !
+  const firebaseConfig = {
+    apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
+  authDomain: "messeng-ar.firebaseapp.com",
+  projectId: "messeng-ar",
+  storageBucket: "messeng-ar.firebasestorage.app",
+  messagingSenderId: "797659694923",
+  appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
+  };
+  
+  // Inisialisasi Firebase
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  /* ================= UTIL & STORAGE ================= */
   const $ = s => document.querySelector(s);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  const baseLink = () => location.href.split('#')[0];
+  const baseLink = () => location.href.split('?')[0].split('#')[0]; // Ambil URL bersih
   function toast(t, ms = 2500) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(e._t); e._t = setTimeout(() => e.hidden = true, ms); }
 
   const store = {
     get(k, d) { try { return localStorage.getItem(k) || d; } catch { return d; } },
     set(k, v) { try { localStorage.setItem(k, v); } catch {} }
-  };
-
-  /* ================= FUNGSI ENKODE & DEKODE DENGAN PAKO (GZIP) ================= */
-  const enc = (obj) => {
-    try {
-      const jsonStr = JSON.stringify(obj);
-      const uint8 = new TextEncoder().encode(jsonStr);
-      const compressed = pako.deflate(uint8);
-      let binaryStr = '';
-      for (let i = 0; i < compressed.length; i++) {
-        binaryStr += String.fromCharCode(compressed[i]);
-      }
-      return btoa(binaryStr).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-    } catch(e) { console.error("Encoding error", e); return ''; }
-  };
-
-  const dec = (str) => {
-    try {
-      let b64 = str.replace(/-/g, '+').replace(/_/g, '/');
-      while (b64.length % 4) b64 += '=';
-      const binaryStr = atob(b64);
-      const compressed = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        compressed[i] = binaryStr.charCodeAt(i);
-      }
-      const decompressed = pako.inflate(compressed);
-      const jsonStr = new TextDecoder().decode(decompressed);
-      return JSON.parse(jsonStr);
-    } catch(e) { console.error("Decoding error", e); return null; }
   };
 
   /* ================= I18N ================= */
@@ -376,7 +341,16 @@
       }
 
       const delBtn = document.createElement('button'); delBtn.className = 'del-btn'; delBtn.innerHTML = 'X'; delBtn.title = "Delete";
-      delBtn.onclick = (e) => { e.stopPropagation(); if(confirm(t.confirmDelMsg)) { msgs.splice(i, 1); store.set('sar_msgs', JSON.stringify(msgs)); renderMsgs(); } };
+      delBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        if(confirm(t.confirmDelMsg)) { 
+          // Jika pesan yang dihapus adalah dari Firebase (event), kita hapus juga di database
+          const msgId = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
+          if (msgId) { db.ref('messages/' + msgId).remove(); }
+          
+          msgs.splice(i, 1); store.set('sar_msgs', JSON.stringify(msgs)); renderMsgs(); 
+        } 
+      };
 
       if (m.kind === 'event') { wrap.appendChild(d); wrap.appendChild(delBtn); } 
       else if (m.dir === 'out') { wrap.appendChild(delBtn); wrap.appendChild(d); } 
@@ -427,33 +401,42 @@
     }).catch(() => toast(t.toastMicDeny));
   };
 
-  /* ================= SEND LOGIC (PAKO COMPRESSION + HASH) ================= */
-  $('#btnSend').onclick = () => {
+  /* ================= SEND LOGIC TO FIREBASE ================= */
+  $('#btnSend').onclick = async () => {
     const text = $('#txt').value.trim();
     if (!text && !pendingAudio) return toast(i18n[lang].toastEmpty);
     
-    const payloadObj = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
+    const uniqueId = uid();
+    const payloadObj = { v: 1, id: uniqueId, from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
     const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
     
-    // Simpan event ke local storage terlebih dahulu (Kecuali Auto-Delete)
-    if (!autoDelete) {
-      msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
-      store.set('sar_msgs', JSON.stringify(msgs));
-      renderMsgs();
-    }
-    
-    // Terapkan kompresi Pako
-    const compressedHash = enc(compactPayload);
-    
-    // Validasi panjang agar tidak patah saat dishare via chat app (Max sekitar ~2000-4000 karakter)
-    if (compressedHash.length > 3500) {
-        toast("Pesan/Audio terlalu besar untuk metode Serverless");
-    }
-    
-    lastShare = baseLink() + '#m=' + compressedHash;
-    
-    $('#shareLink').textContent = lastShare;
+    // Tampilkan modal loading
     $('#screen-share').hidden = false;
+    $('#shareLink').textContent = "Mengunggah pesan ke AR Cloud...";
+    $('#btnShare').disabled = true;
+    $('#btnCopy').disabled = true;
+
+    try {
+      // Simpan ke Firebase Realtime Database
+      await db.ref('messages/' + uniqueId).set(payloadObj);
+      
+      // Jika berhasil, update UI dan buat link
+      if (!autoDelete) {
+        msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
+        store.set('sar_msgs', JSON.stringify(msgs));
+        renderMsgs();
+      }
+      
+      lastShare = baseLink() + '?id=' + uniqueId;
+      $('#shareLink').textContent = lastShare;
+      $('#btnShare').disabled = false;
+      $('#btnCopy').disabled = false;
+      
+    } catch (error) {
+      $('#screen-share').hidden = true;
+      toast("Gagal mengunggah pesan ke server");
+      console.error(error);
+    }
     
     $('#txt').value = ''; pendingAudio = null; $('#btnMic').classList.remove('mic-on'); setReply(null); 
   };
@@ -465,27 +448,32 @@
     catch(e) { $('#btnCopy').click(); }
   };
 
-  /* ================= INCOMING LOGIC ================= */
-  function handlePayload(p) {
-    if (!p) return;
-    const parsed = Array.isArray(p) ? { v: p[0], id: p[1], from: p[2], to: p[3], text: p[4], audio: p[5], t: p[6] } : p;
-    currentPayload = parsed;
-    $('#incFrom').textContent = i18n[lang].incFrom + parsed.from;
+  /* ================= INCOMING LOGIC (GET DARI FIREBASE) ================= */
+  // Cek parameter ?id=xxxxx saat website di-load
+  const urlParams = new URLSearchParams(window.location.search);
+  const msgId = urlParams.get('id');
+
+  if (msgId) {
     $('#screen-incoming').hidden = false;
+    $('#incFrom').textContent = "Mengunduh pesan...";
+    
+    // Ambil data dari Firebase
+    db.ref('messages/' + msgId).once('value').then((snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        currentPayload = data;
+        $('#incFrom').textContent = i18n[lang].incFrom + data.from;
+        $('#btnAccept').style.display = 'block';
+      } else {
+        $('#screen-incoming').hidden = true;
+        toast("Pesan tidak ditemukan atau sudah dihapus");
+        window.history.replaceState({}, document.title, window.location.pathname); // Bersihkan URL
+      }
+    }).catch(e => {
+      $('#screen-incoming').hidden = true;
+      toast("Gagal mengunduh pesan");
+    });
   }
-  
-  // Tangkap hash URL ketika load pertama kali atau saat hash berubah
-  const checkHash = () => {
-    const m = location.hash.match(/m=(.+)/);
-    if (m) { 
-        try { 
-            const data = dec(m[1]);
-            if (data) handlePayload(data); 
-        } catch(e){ console.error(e); } 
-    }
-  };
-  
-  window.addEventListener('hashchange', checkHash);
 
   $('#btnIncLater').onclick = () => $('#screen-incoming').hidden = true;
   
@@ -634,7 +622,11 @@
         
         const dragonHeadY = 0.35; bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`); bubble.setAttribute('visible', 'true');
         
-        if (autoDelete && currentPayload.id) deleteMsgByPayloadId(currentPayload.id);
+        // HAPUS OTOMATIS DARI DATABASE FIREBASE JIKA FITUR AKTIF
+        if (autoDelete && currentPayload.id) {
+            db.ref('messages/' + currentPayload.id).remove();
+            deleteMsgByPayloadId(currentPayload.id);
+        }
 
         speakAndPlay(currentPayload, () => {
            const actionBtn = document.getElementById('dragon-action-btn'); const btnBody = document.getElementById('btn-body'); const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right'); const btnText = document.getElementById('btn-text');
@@ -658,7 +650,7 @@
   $('#btnBackAR').onclick = () => closeAR(); $('#btnBack').onclick = () => closeAR();
   $('#btnReply').onclick = () => closeAR(currentPayload ? currentPayload.from : null);
 
-  applyLang(); checkHash();
+  applyLang();
   const pendingReply = sessionStorage.getItem('sar_replyTo');
   if (pendingReply) { setReply(pendingReply); sessionStorage.removeItem('sar_replyTo'); toast(i18n[lang].toastReply + pendingReply); }
 </script>
