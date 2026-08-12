@@ -8,6 +8,9 @@
   <!-- A-Frame Murni & Look-At Component untuk 3D Text -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+  
+  <!-- Mesin Animasi untuk menjalankan animation-mixer -->
+  <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.0.0/dist/aframe-extras.min.js"></script>
 
   <style>
     /* ============ UI/UX REDESIGN: GLASSMORPHISM ============ */
@@ -199,35 +202,37 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- 3D Model -->
-    <a-entity id="dragon-entity" gltf-model="[https://wolfpuplabs.github.io/MessengAR/dragon.glb](https://wolfpuplabs.github.io/MessengAR/dragon.glb)" 
-      scale="0.5 0.5 0.5" 
+    <!-- 3D Model: Menggunakan Tautan Absolut dan Skala Diperkecil -->
+    <a-entity 
+      id="dragon-entity" 
+      gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
+      scale="0.02 0.02 0.02" 
       visible="false"
       animation-mixer="clip: *">
       
       <!-- 3D Text Melayang Murni Tanpa Plane -->
       <a-entity 
         id="dragon-bubble"
-        position="0 2.5 0"
+        position="0 25 0"
         look-at="[camera]"
         visible="false">
         
         <a-entity 
           id="dragon-text" 
-          text="value: ...; font: roboto; align: center; width: 2.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
+          text="value: ...; font: roboto; align: center; width: 40; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
           position="0 0 0">
         </a-entity>
         
         <!-- Tombol 3D Balas/Kembali -->
-        <a-entity id="dragon-action-btn" position="0 -0.8 0" visible="false">
+        <a-entity id="dragon-action-btn" position="0 -12 0" visible="false">
           <!-- Badan Kapsul -->
-          <a-plane id="btn-body" width="0.6" height="0.2" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
+          <a-plane id="btn-body" width="10" height="3" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
           <!-- Lengkungan Kiri -->
-          <a-circle id="btn-left" radius="0.1" position="-0.3 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+          <a-circle id="btn-left" radius="1.5" position="-5 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
           <!-- Lengkungan Kanan -->
-          <a-circle id="btn-right" radius="0.1" position="0.3 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+          <a-circle id="btn-right" radius="1.5" position="5 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
           <!-- Teks Tombol -->
-          <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 1.2; color: #ffffff; wrapCount: 12" position="0 0 0.01"></a-entity>
+          <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 20; color: #ffffff; wrapCount: 12" position="0 0 0.1"></a-entity>
         </a-entity>
         
       </a-entity>
@@ -480,7 +485,7 @@
     }).catch(() => toast(t.toastMicDeny));
   };
 
-  /* ================= SEND LOGIC ================= */
+  /* ================= SEND LOGIC (IS.GD INTEGRATION) ================= */
   $('#btnSend').onclick = async () => {
     const t = i18n[lang];
     const text = $('#txt').value.trim();
@@ -761,11 +766,6 @@
     
     if (replyTarget) {
       sessionStorage.setItem('sar_replyTo', replyTarget);
-    }
-    
-    // Hapus hash dari URL agar tidak memicu layar "Courier Tiba" lagi saat reload
-    if (window.location.hash) {
-      history.replaceState(null, null, window.location.pathname + window.location.search);
     }
     
     window.location.reload();
