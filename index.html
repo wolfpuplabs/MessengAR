@@ -76,9 +76,11 @@
     header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 20px; background: rgba(11, 12, 16, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 10; position: relative; }
     .logo { font-size: 24px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
     
+    /* Tombol Utama - Dibuat width 100% jika di dalam modal agar rapi di tengah */
     .primary-btn { background: linear-gradient(135deg, #45a29e, #1f2833); color: #fff; border: none; border-radius: 16px; padding: 14px 20px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3); pointer-events: auto; flex-shrink: 0; white-space: nowrap; }
     .primary-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(69, 162, 158, 0.2); }
     .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .glass-panel .primary-btn { width: 100%; margin-top: 8px; } /* Aturan agar tombol di modal penuh dan di tengah */
     
     .iconbtn { width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(102, 252, 241, 0.2); background: #1f2833; color: #66fcf1; font-size: 14px; font-weight: bold; cursor: pointer; flex: none; pointer-events: auto; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.2); flex-shrink: 0; }
     .iconbtn:active { transform: scale(0.92); background: #2f3e4f; }
@@ -109,6 +111,7 @@
     /* Komposer Bawah */
     .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.95); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10; width: 100%; box-sizing: border-box; }
     .composer-inputs { display: flex; gap: 10px; width: 100%; align-items: center; }
+    .composer-inputs .primary-btn { width: auto; margin-top: 0; } /* Khusus komposer jangan full width */
     
     /* Toggle Auto-Delete */
     .auto-delete-bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-size: 12px; color: #c5c6c7; }
@@ -132,13 +135,15 @@
     .overlay p { margin: 0 0 20px 0; color: #c5c6c7; font-size: 14.5px; line-height: 1.5; }
     
     #shareLink { background: #0b0c10; border: 1px solid rgba(102, 252, 241, 0.3); border-radius: 12px; padding: 14px; font-size: 13px; color: #66fcf1; word-break: break-all; margin-bottom: 20px; max-height: 100px; overflow-y: auto; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
-    .row { display: flex; gap: 12px; justify-content: center; }
+    .row { display: flex; gap: 12px; justify-content: center; width: 100%; }
+    .row .primary-btn { flex: 1; }
     
     /* AR UI DOM */
     #ar-ui-container { position: absolute; inset: 0; margin: 0 auto; max-width: 500px; width: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
     .ar-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; pointer-events: auto; }
     #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
     #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
+    #arBtns .primary-btn { width: auto; margin-top: 0; }
     
     #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.95); border: 1px solid #45a29e; border-radius: 999px; padding: 12px 24px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 20px rgba(0,0,0,0.5); font-weight: 600; max-width: 90vw; text-align: center; }
   </style>
@@ -212,7 +217,7 @@
     <h2 id="nameTitleUI">Selamat Datang</h2>
     <p id="nameDescUI">Masukkan nama kamu sebagai pengirim:</p>
     <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center; outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
-    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai</button>
+    <button id="btnNameSave" class="primary-btn">Mulai</button>
   </div>
 </div>
 
@@ -276,7 +281,6 @@
 
 <script>
   /* ================= INISIALISASI FIREBASE ================= */
-  // ! PENTING: ISI CONFIG FIREBASE INI DENGAN MILIKMU SENDIRI !
   const firebaseConfig = {
     apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
 authDomain: "messeng-ar.firebaseapp.com",
@@ -293,7 +297,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
   /* ================= UTIL & STORAGE ================= */
   const $ = s => document.querySelector(s);
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-  const baseLink = () => location.href.split('?')[0].split('#')[0]; // URL bersih dari Params/Hash
+  const baseLink = () => location.href.split('?')[0].split('#')[0]; 
   function toast(t, ms = 2500) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(e._t); e._t = setTimeout(() => e.hidden = true, ms); }
 
   const store = {
@@ -314,7 +318,8 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
       toastMicRec: "Merekam... tap Mic untuk stop", toastMicDeny: "Mic tidak diizinkan", toastEmpty: "Ketik pesan atau rekam suara dulu",
       toastCopy: "Link tersalin!", toastReply: "Membalas pesan ke ", msgSent: "Pesan dikirim", msgArr: "Pesan tiba dari ",
       shareTitle: "MESSENG-AR", shareText: "Ada pesan AR untukmu!", incFrom: "Pesan rahasia dari ", confirmClear: "Yakin ingin menghapus semua pesan?",
-      confirmDelMsg: "Hapus pesan ini?", errUpload: "Gagal mengunggah pesan ke server", errDownload: "Pesan tidak ditemukan/kadaluwarsa"
+      confirmDelMsg: "Hapus pesan ini?", errUpload: "Gagal mengunggah pesan ke server", errDownload: "Pesan tidak ditemukan/kadaluwarsa",
+      voiceMsgLabel: "(Pesan Suara)"
     },
     en: {
       btnSend: "Send", plcTxt: "Type a message...", replyLabel: "Replying to ", lblAutoDel: "Auto-delete after read",
@@ -327,7 +332,8 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
       toastMicRec: "Recording... tap Mic to stop", toastMicDeny: "Mic access denied", toastEmpty: "Type a message or record voice first",
       toastCopy: "Link copied!", toastReply: "Replying to ", msgSent: "Message sent", msgArr: "Message arrived from ",
       shareTitle: "MESSENG-AR", shareText: "There's an AR message for you!", incFrom: "Secret message from ", confirmClear: "Are you sure you want to clear the chat?",
-      confirmDelMsg: "Delete this message?", errUpload: "Failed to upload message to server", errDownload: "Message not found or expired"
+      confirmDelMsg: "Delete this message?", errUpload: "Failed to upload message to server", errDownload: "Message not found or expired",
+      voiceMsgLabel: "(Voice Message)"
     }
   };
 
@@ -390,7 +396,8 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
         d.textContent = actionTxt + ' — Tap';
       } else {
         d.className = 'bub ' + (m.dir === 'out' ? 'out-bub' : 'in-bub');
-        let html = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + m.text;
+        // Hanya tampilkan teks jika tidak kosong. Jika kosong, berarti hanya voice message
+        let html = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + (m.text || '');
         if (m.payload && m.payload.audio) html += '<audio controls src="' + m.payload.audio + '"></audio>';
         html += '<small>' + new Date(m.t).toLocaleTimeString() + '</small>';
         d.innerHTML = html;
@@ -400,10 +407,8 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
       delBtn.onclick = (e) => { 
         e.stopPropagation(); 
         if(confirm(t.confirmDelMsg)) { 
-          // Hapus dari Firebase juga (jika event terikat ke ID)
           const msgId = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
           if (msgId) { db.ref('messages/' + msgId).remove(); }
-          
           msgs.splice(i, 1); store.set('sar_msgs', JSON.stringify(msgs)); renderMsgs(); 
         } 
       };
@@ -454,7 +459,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
         mRec = null; $('#btnMic').classList.remove('mic-on');
       };
       mRec.start(); $('#btnMic').classList.add('mic-on'); toast(t.toastMicRec);
-      setTimeout(() => { if (mRec) mRec.stop() }, 10000); // 10 Detik Maks
+      setTimeout(() => { if (mRec) mRec.stop() }, 10000); 
     }).catch(() => toast(t.toastMicDeny));
   };
 
@@ -464,7 +469,8 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
     if (!text && !pendingAudio) return toast(i18n[lang].toastEmpty);
     
     const uniqueId = uid();
-    const payloadObj = { v: 1, id: uniqueId, from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
+    // Jika tidak ada text tapi ada audio, biarkan text kosong agar gelembung AR nanti tidak render "(Voice Message)"
+    const payloadObj = { v: 1, id: uniqueId, from: myName, to: replyTo || null, text: text || '', audio: pendingAudio, t: Date.now() };
     const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
     
     $('#screen-share').hidden = false;
@@ -475,7 +481,6 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
     try {
       await db.ref('messages/' + uniqueId).set(payloadObj);
       
-      // Jika autoDelete mati, simpan event ke history HP pengirim
       if (!autoDelete) {
         msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
         store.set('sar_msgs', JSON.stringify(msgs));
@@ -551,7 +556,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
     const audioEl = $('#arMessageAudio');
     if (payload.audio) {
       audioEl.src = payload.audio; audioEl.play().catch(() => toast('Audio diblokir perangkat')); audioEl.onended = onFinish;
-    } else if ('speechSynthesis' in window) {
+    } else if ('speechSynthesis' in window && payload.text) { // Hanya TTS jika ada teks
       const u = new SpeechSynthesisUtterance(payload.text);
       const targetLang = (lang === 'id') ? 'id-ID' : 'en-US';
       u.lang = targetLang; u.rate = 0.95; u.pitch = 1.0;
@@ -624,6 +629,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
 
   /* ================= AR LOGIC & BUBBLE ================= */
   function calculateWrappedLines(str, maxChars = 26) {
+    if (!str) return { lines: 0, maxLen: 0 };
     const paragraphs = str.split('\n'); let lineCount = 0; let maxLen = 0;
     paragraphs.forEach(para => {
       if (para.length === 0) { lineCount++; return; }
@@ -659,23 +665,29 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
       $('#btnPlace').hidden = true; $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        const textStr = currentPayload.text || ""; textEl.setAttribute('text', 'value', textStr);
-        const maxWrap = 26; const baseWidth = 0.85; const { lines, maxLen } = calculateWrappedLines(textStr, maxWrap);
-        const charWidth = baseWidth / maxWrap; const lineHeight = 0.055; const r = 0.04; 
-        const paddingX = 0.12; const paddingY = 0.08;
-        const dynWidth = Math.max(0.2, (maxLen * charWidth) + paddingX); const dynHeight = Math.max(0.1, (lines * lineHeight) + paddingY);
+        const textStr = currentPayload.text || ""; 
+        textEl.setAttribute('text', 'value', textStr);
         
-        document.getElementById('bg-main').setAttribute('width', dynWidth); document.getElementById('bg-main').setAttribute('height', dynHeight - (2 * r));
-        document.getElementById('bg-cross').setAttribute('width', dynWidth - (2 * r)); document.getElementById('bg-cross').setAttribute('height', dynHeight);
+        // JIKA TEKS KOSONG (HANYA AUDIO), SEMBUNYIKAN BUBBLE TEKS
+        if (!textStr) {
+           bubble.setAttribute('visible', 'false');
+        } else {
+           const maxWrap = 26; const baseWidth = 0.85; const { lines, maxLen } = calculateWrappedLines(textStr, maxWrap);
+           const charWidth = baseWidth / maxWrap; const lineHeight = 0.055; const r = 0.04; 
+           const paddingX = 0.12; const paddingY = 0.08;
+           const dynWidth = Math.max(0.2, (maxLen * charWidth) + paddingX); const dynHeight = Math.max(0.1, (lines * lineHeight) + paddingY);
+           
+           document.getElementById('bg-main').setAttribute('width', dynWidth); document.getElementById('bg-main').setAttribute('height', dynHeight - (2 * r));
+           document.getElementById('bg-cross').setAttribute('width', dynWidth - (2 * r)); document.getElementById('bg-cross').setAttribute('height', dynHeight);
+           
+           const offsetX = (dynWidth / 2) - r; const offsetY = (dynHeight / 2) - r;
+           document.getElementById('bg-tl').setAttribute('position', `${-offsetX} ${offsetY} 0`); document.getElementById('bg-tr').setAttribute('position', `${offsetX} ${offsetY} 0`);
+           document.getElementById('bg-bl').setAttribute('position', `${-offsetX} ${-offsetY} 0`); document.getElementById('bg-br').setAttribute('position', `${offsetX} ${-offsetY} 0`);
+           document.getElementById('bg-tail').setAttribute('position', `0 ${-dynHeight / 2} 0`);
+           
+           const dragonHeadY = 0.35; bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`); bubble.setAttribute('visible', 'true');
+        }
         
-        const offsetX = (dynWidth / 2) - r; const offsetY = (dynHeight / 2) - r;
-        document.getElementById('bg-tl').setAttribute('position', `${-offsetX} ${offsetY} 0`); document.getElementById('bg-tr').setAttribute('position', `${offsetX} ${offsetY} 0`);
-        document.getElementById('bg-bl').setAttribute('position', `${-offsetX} ${-offsetY} 0`); document.getElementById('bg-br').setAttribute('position', `${offsetX} ${-offsetY} 0`);
-        document.getElementById('bg-tail').setAttribute('position', `0 ${-dynHeight / 2} 0`);
-        
-        const dragonHeadY = 0.35; bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`); bubble.setAttribute('visible', 'true');
-        
-        // Auto-Delete: Hapus pesan dari Firebase jika toggle aktif (di sisi Penerima/Pengirim yang buka AR)
         if (autoDelete && currentPayload.id) {
             db.ref('messages/' + currentPayload.id).remove();
             deleteMsgByPayloadId(currentPayload.id);
@@ -684,6 +696,10 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
         speakAndPlay(currentPayload, () => {
            const actionBtn = document.getElementById('dragon-action-btn'); const btnBody = document.getElementById('btn-body'); const btnLeft = document.getElementById('btn-left'); const btnRight = document.getElementById('btn-right'); const btnText = document.getElementById('btn-text');
            btnText.setAttribute('text', 'value', 'REPLY');
+           // Sesuaikan posisi tombol action jika tidak ada bubble teks agar tidak terlalu ke bawah
+           if(!textStr) actionBtn.setAttribute('position', '0 0.25 0');
+           else actionBtn.setAttribute('position', '0 -0.15 0');
+
            if (replyAllowed) { btnBody.setAttribute('color', '#45a29e'); btnLeft.setAttribute('color', '#45a29e'); btnRight.setAttribute('color', '#45a29e'); } 
            else { btnBody.setAttribute('color', '#1f2833'); btnLeft.setAttribute('color', '#1f2833'); btnRight.setAttribute('color', '#1f2833'); }
            actionBtn.setAttribute('visible', 'true');
@@ -703,11 +719,11 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
   $('#btnBackAR').onclick = () => closeAR(); $('#btnBack').onclick = () => closeAR();
   $('#btnReply').onclick = () => closeAR(currentPayload ? currentPayload.from : null);
 
-  /* ================= AUTO CLEANUP (TUKANG SAPU 24 JAM) ================= */
+  /* ================= AUTO CLEANUP ================= */
   function cleanupOldMessages() {
     const dbRef = db.ref('messages');
     const now = Date.now();
-    const cutoff = now - (24 * 60 * 60 * 1000); // Batas 24 Jam (dalam milidetik)
+    const cutoff = now - (24 * 60 * 60 * 1000); 
 
     dbRef.orderByChild('t').endAt(cutoff).once('value')
       .then(snapshot => {
@@ -721,7 +737,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
 
   /* ================= BOOTING ================= */
   applyLang();
-  cleanupOldMessages(); // Panggil fungsi pembersih setiap web dibuka
+  cleanupOldMessages(); 
 
   const pendingReply = sessionStorage.getItem('sar_replyTo');
   if (pendingReply) { setReply(pendingReply); sessionStorage.removeItem('sar_replyTo'); toast(i18n[lang].toastReply + pendingReply); }
