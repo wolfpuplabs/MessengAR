@@ -5,16 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>MESSENG-AR Courier (WebXR)</title>
 
-  <!-- A-Frame Murni & Look-At Component -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
   
-  <!-- Firebase SDK (Versi 8) -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
-  <!-- Komponen Naga Terbang Random -->
   <script>
     AFRAME.registerComponent('random-flight', {
       init: function () {
@@ -145,7 +142,6 @@
 </head>
 <body>
 
-<!-- CHAT SCREEN -->
 <div id="screen-chat" class="screen">
   <header>
     <div style="display: flex; justify-content: flex-start;">
@@ -171,7 +167,6 @@
       <button id="btnSend" class="primary-btn">Kirim</button>
     </div>
 
-    <!-- TOGGLE AUTO DELETE (LOKAL) -->
     <div class="auto-delete-bar">
       <span id="lblAutoDelete">Hapus otomatis setelah dibaca</span>
       <label class="toggle-switch">
@@ -182,7 +177,6 @@
   </div>
 </div>
 
-<!-- SHARE MODAL -->
 <div id="screen-share" class="screen overlay" hidden>
   <div class="glass-panel">
     <h2 id="shareTitleUI">Pesan Siap Terbang!</h2>
@@ -196,17 +190,15 @@
   </div>
 </div>
 
-<!-- INCOMING MODAL -->
 <div id="screen-incoming" class="screen overlay" hidden>
   <div class="glass-panel">
     <h2 id="incTitleUI">Courier Tiba!</h2>
     <p id="incFrom"></p>
-    <button id="btnAccept" class="primary-btn" style="display: none;">Buka di AR</button>
+    <button id="btnAccept" class="primary-btn" style="display: none; margin: 0 auto; width: 100%;">Buka di AR</button>
     <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%; border:none;">Tutup</button>
   </div>
 </div>
 
-<!-- NAME MODAL -->
 <div id="nameModal" class="screen overlay" hidden>
   <div class="glass-panel">
     <h2 id="nameTitleUI">Selamat Datang</h2>
@@ -219,7 +211,6 @@
 <div id="toast" hidden></div>
 <audio id="arMessageAudio" hidden></audio>
 
-<!-- WEBXR DOM OVERLAY UI -->
 <div id="ar-ui-container" hidden>
   <div class="ar-top">
     <div><button id="btnBackAR" class="iconbtn">&lt;</button></div>
@@ -229,13 +220,11 @@
   <div id="arHint">Pindai lantai hingga cincin putih muncul.</div>
   <div id="arBtns">
     <button id="btnPlace" class="primary-btn" hidden>Tampilkan Pesan</button>
-    <!-- Tombol Balas Pesan 2D ditambahkan di sini -->
     <button id="btnReply" class="primary-btn" hidden>Balas Pesan</button>
     <button id="btnBack" class="primary-btn" hidden>Kembali</button>
   </div>
 </div>
 
-<!-- A-FRAME SCENE -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
   <a-scene webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container;" renderer="colorManagement: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" transparent="true">
     <a-camera id="camera" position="0 1.6 0"></a-camera>
@@ -251,7 +240,6 @@
       <a-entity id="dragon-mover" random-flight>
         <a-entity gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" scale="0.002 0.002 0.002" position="0 0 0" animation-mixer></a-entity>
         
-        <!-- GELEMBUNG PESAN SAJA -->
         <a-entity id="dragon-bubble" look-at="[camera]" position="0 0.45 0" visible="false">
           <a-entity id="bubble-bg" position="0 0 -0.01">
             <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
@@ -264,7 +252,6 @@
           </a-entity>
           <a-entity id="dragon-text" text="value: ...; font: roboto; align: center; anchor: center; baseline: center; width: 0.85; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.05" position="0 0 0"></a-entity>
         </a-entity>
-        <!-- HAPUS SEMUA KODE TOMBOL 3D REPLY DARI SINI -->
       </a-entity>
     </a-entity>
   </a-scene>
@@ -274,7 +261,7 @@
   /* ================= INISIALISASI FIREBASE ================= */
   // ! PENTING: ISI CONFIG FIREBASE INI DENGAN MILIKMU SENDIRI !
   const firebaseConfig = {
-   apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
+    apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
 authDomain: "messeng-ar.firebaseapp.com",
 databaseURL: "https://messeng-ar-default-rtdb.asia-southeast1.firebasedatabase.app",
 projectId: "messeng-ar",
@@ -510,7 +497,9 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
       if (data) {
         currentPayload = data;
         $('#incFrom').textContent = i18n[lang].incFrom + data.from;
-        $('#btnAccept').style.display = 'block';
+        
+        // FIX: Gunakan inline-block alih-alih block agar tetap berada di tengah layar
+        $('#btnAccept').style.display = 'inline-block';
       } else {
         $('#screen-incoming').hidden = true;
         toast(i18n[lang].errDownload);
@@ -667,14 +656,12 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
         
         const dragonHeadY = 0.35; bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`); bubble.setAttribute('visible', 'true');
         
-        // Auto-Delete: Hapus pesan dari Firebase jika toggle aktif (di sisi Penerima/Pengirim yang buka AR)
         if (autoDelete && currentPayload.id) {
             db.ref('messages/' + currentPayload.id).remove();
             deleteMsgByPayloadId(currentPayload.id);
         }
 
         speakAndPlay(currentPayload, () => {
-           // MUNCULKAN TOMBOL UI 2D SETELAH SUARA SELESAI
            if (replyAllowed) {
                $('#btnReply').hidden = false;
            }
@@ -698,7 +685,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
   function cleanupOldMessages() {
     const dbRef = db.ref('messages');
     const now = Date.now();
-    const cutoff = now - (24 * 60 * 60 * 1000); // Batas 24 Jam (dalam milidetik)
+    const cutoff = now - (24 * 60 * 60 * 1000); 
 
     dbRef.orderByChild('t').endAt(cutoff).once('value')
       .then(snapshot => {
@@ -712,7 +699,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
 
   /* ================= BOOTING ================= */
   applyLang();
-  cleanupOldMessages(); // Panggil fungsi pembersih setiap web dibuka
+  cleanupOldMessages(); 
 
   const pendingReply = sessionStorage.getItem('sar_replyTo');
   if (pendingReply) { setReply(pendingReply); sessionStorage.removeItem('sar_replyTo'); toast(i18n[lang].toastReply + pendingReply); }
