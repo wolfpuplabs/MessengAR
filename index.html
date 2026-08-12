@@ -201,6 +201,27 @@
     .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.95); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10; width: 100%; box-sizing: border-box; }
     .composer-inputs { display: flex; gap: 10px; width: 100%; align-items: center; }
     
+    /* STYLE TOGGLE AUTO DELETE */
+    .auto-delete-bar {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 6px; font-size: 12px; color: #c5c6c7;
+    }
+    .toggle-switch {
+      position: relative; display: inline-block; width: 38px; height: 20px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1f2833; transition: .3s; border-radius: 20px;
+      border: 1px solid rgba(102, 252, 241, 0.3);
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px;
+      background-color: #66fcf1; transition: .3s; border-radius: 50%;
+    }
+    input:checked + .slider { background-color: #45a29e; }
+    input:checked + .slider:before { transform: translateX(18px); background-color: #fff; }
+
     #txt { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px 18px; background: #1f2833; color: #fff; font-size: 15px; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); width: 100%; }
     #txt:focus { border-color: #45a29e; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2), 0 0 8px rgba(69, 162, 158, 0.3); }
     
@@ -256,6 +277,15 @@
       <button id="btnMic" class="iconbtn" title="Rekam Suara">Mic</button>
       <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
       <button id="btnSend" class="primary-btn">Kirim</button>
+    </div>
+
+    <!-- TOGGLE AUTO DELETE AFTER READ -->
+    <div class="auto-delete-bar">
+      <span id="lblAutoDelete">Hapus otomatis setelah dibaca</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="chkAutoDelete">
+        <span class="slider"></span>
+      </label>
     </div>
   </div>
 </div>
@@ -405,6 +435,7 @@
       btnSend: "Kirim",
       plcTxt: "Ketik pesan...",
       replyLabel: "Membalas ke ",
+      lblAutoDel: "Hapus otomatis setelah dibaca",
       titleShare: "Pesan Siap Terbang!",
       descShare: "Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.",
       btnShare: "Bagikan",
@@ -438,13 +469,13 @@
       shareText: "Ada pesan AR untukmu!",
       incFrom: "Pesan rahasia dari ",
       confirmClear: "Yakin ingin menghapus semua pesan?",
-      confirmDelMsg: "Hapus pesan ini?",
-      genLink: "Membuat link pendek... "
+      confirmDelMsg: "Hapus pesan ini?"
     },
     en: {
       btnSend: "Send",
       plcTxt: "Type a message...",
       replyLabel: "Replying to ",
+      lblAutoDel: "Auto-delete after read",
       titleShare: "Message Ready!",
       descShare: "Share this link with the recipient. When opened, the courier will appear in AR.",
       btnShare: "Share",
@@ -478,8 +509,7 @@
       shareText: "There's an AR message for you!",
       incFrom: "Secret message from ",
       confirmClear: "Are you sure you want to clear the chat?",
-      confirmDelMsg: "Delete this message?",
-      genLink: "Generating short link... "
+      confirmDelMsg: "Delete this message?"
     }
   };
 
@@ -488,6 +518,7 @@
   function applyLang() {
     const t = i18n[lang];
     $('#btnSend').textContent = t.btnSend;
+    $('#lblAutoDelete').textContent = t.lblAutoDel;
     $('#txt').placeholder = replyTo ? t.replyLabel + replyTo + '...' : t.plcTxt;
     if(replyTo) $('#replyLabel').textContent = t.replyLabel + replyTo;
     $('#shareTitleUI').textContent = t.titleShare;
@@ -526,11 +557,18 @@
   /* ================= STATE ================= */
   let myName = store.get('sar_name', '');
   let msgs = JSON.parse(store.get('sar_msgs', '[]'));
+  let autoDelete = store.get('sar_autodel', 'false') === 'true';
   let currentPayload = null;
   let pendingAudio = null;
   let lastShare = '';
   let replyTo = null;
   let replyAllowed = false;
+
+  $('#chkAutoDelete').checked = autoDelete;
+  $('#chkAutoDelete').onchange = (e) => {
+    autoDelete = e.target.checked;
+    store.set('sar_autodel', autoDelete);
+  };
 
   /* ================= UI LOGIC ================= */
   function saveName() {
@@ -611,6 +649,16 @@
     box.scrollTop = box.scrollHeight;
   }
 
+  function deleteMsgByPayloadId(payloadId) {
+    if (!payloadId) return;
+    msgs = msgs.filter(m => {
+      const pid = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
+      return pid !== payloadId;
+    });
+    store.set('sar_msgs', JSON.stringify(msgs));
+    renderMsgs();
+  }
+
   $('#msgs').addEventListener('click', e => {
     const el = e.target.closest('.bub-event');
     if (!el) return;
@@ -663,8 +711,8 @@
     }).catch(() => toast(t.toastMicDeny));
   };
 
-  /* ================= SEND LOGIC (IS.GD INTEGRATION) ================= */
-  $('#btnSend').onclick = async () => {
+  /* ================= SEND LOGIC (LANGSUNG / TANPA SHORTENER) ================= */
+  $('#btnSend').onclick = () => {
     const t = i18n[lang];
     const text = $('#txt').value.trim();
     if (!text && !pendingAudio) return toast(t.toastEmpty);
@@ -672,31 +720,22 @@
     const payloadObj = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
     const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
     
-    msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
-    store.set('sar_msgs', JSON.stringify(msgs));
-    renderMsgs();
-    
+    // Tautan langsung tanpa memanggil service pemendek URL eksternal (mencegah redirect iklan)
     const longLink = baseLink() + '#m=' + enc(compactPayload);
     lastShare = longLink; 
     
-    $('#shareLink').textContent = t.genLink;
+    if (!autoDelete) {
+      msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
+      store.set('sar_msgs', JSON.stringify(msgs));
+      renderMsgs();
+    }
+    
+    $('#shareLink').textContent = lastShare;
     $('#screen-share').hidden = false;
     $('#txt').value = '';
     pendingAudio = null;
     $('#btnMic').classList.remove('mic-on');
     setReply(null); 
-    
-    try {
-      const response = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(longLink));
-      if (response.ok) {
-        const shortUrl = await response.text();
-        lastShare = shortUrl;
-      }
-    } catch (err) {
-      console.warn("Gagal membuat link pendek, fallback ke link panjang.", err);
-    }
-    
-    $('#shareLink').textContent = lastShare;
   };
 
   $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
@@ -727,7 +766,7 @@
   
   $('#btnAccept').onclick = () => {
     $('#screen-incoming').hidden = true;
-    if (currentPayload && currentPayload.from !== myName && !msgs.some(m => {
+    if (!autoDelete && currentPayload && currentPayload.from !== myName && !msgs.some(m => {
       const pid = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
       return pid === currentPayload.id;
     })) {
@@ -990,6 +1029,11 @@
 
         bubble.setAttribute('visible', 'true');
         
+        // Hapus pesan secara otomatis setelah dibaca jika toggle Auto-Delete aktif
+        if (autoDelete && currentPayload.id) {
+          deleteMsgByPayloadId(currentPayload.id);
+        }
+
         speakAndPlay(currentPayload, () => {
            const actionBtn = document.getElementById('dragon-action-btn');
            const btnBody = document.getElementById('btn-body');
