@@ -202,17 +202,16 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Pembungkus Utama -->
+    <!-- Pembungkus Utama (Memisahkan skala Naga dan UI agar tidak bertabrakan) -->
     <a-entity id="dragon-entity" visible="false">
         
-      <!-- MODIFIKASI: 3D Model Naga dengan Efek Melayang Naik-Turun -->
+      <!-- 3D Model Naga dengan Efek Melayang Naik-Turun -->
       <a-entity 
-  gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
-  scale="0.002 0.002 0.002" 
-  animation-mixer="clip: Fly; loop: repeat"
-  animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
-</a-entity>
-
+        gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
+        scale="0.002 0.002 0.002" 
+        animation-mixer="clip: *; loop: repeat"
+        animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
+      </a-entity>
       
       <!-- 3D Text & Tombol Melayang -->
       <a-entity 
