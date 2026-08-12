@@ -22,7 +22,18 @@
       background-color: #0b0c10; color: #f0f4f8; height: 100vh; overflow: hidden; 
     }
     
-    .screen { position: absolute; inset: 0; display: flex; flex-direction: column; z-index: 20; background: #0b0c10; }
+    /* Membuat layout terpusat dan konsisten seperti Mobile App */
+    .screen { 
+      position: absolute; 
+      inset: 0; 
+      margin: 0 auto; /* Center layout secara horizontal */
+      max-width: 500px; /* Lebar maksimal menyerupai layar HP */
+      width: 100%;
+      display: flex; 
+      flex-direction: column; 
+      z-index: 20; 
+      background: #0b0c10; 
+    }
     
     .glass-panel {
       background: rgba(22, 26, 32, 0.75);
@@ -33,6 +44,8 @@
       padding: 24px;
       text-align: center;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 90%;
+      max-width: 400px;
     }
     
     header { 
@@ -43,6 +56,7 @@
       z-index: 10;
       position: relative;
     }
+    
     .logo { 
       font-size: 24px; font-weight: 800; margin: 0; 
       background: linear-gradient(90deg, #66fcf1, #45a29e); 
@@ -54,10 +68,12 @@
     
     .primary-btn {
       background: linear-gradient(135deg, #45a29e, #1f2833);
-      color: #fff; border: none; border-radius: 16px; padding: 14px 24px;
+      color: #fff; border: none; border-radius: 16px; padding: 14px 20px;
       font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease;
       box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3);
       pointer-events: auto;
+      flex-shrink: 0; /* Mencegah tombol gepeng atau terpotong */
+      white-space: nowrap;
     }
     .primary-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(69, 162, 158, 0.2); }
     
@@ -66,6 +82,7 @@
       background: #1f2833; color: #66fcf1; font-size: 14px; font-weight: bold; cursor: pointer; flex: none; 
       pointer-events: auto; display: flex; align-items: center; justify-content: center;
       transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      flex-shrink: 0; /* Mencegah ikon menyusut saat ruang sempit */
     }
     .iconbtn:active { transform: scale(0.92); background: #2f3e4f; }
     
@@ -96,9 +113,11 @@
     .del-btn:hover, .del-btn:active { opacity: 1; background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; transform: scale(1.1); }
     .evt .del-btn { margin-bottom: 0; }
 
-    .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.95); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10; }
-    .composer-inputs { display: flex; gap: 10px; }
-    #txt { flex: 1; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px 18px; background: #1f2833; color: #fff; font-size: 15px; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
+    .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.95); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10; width: 100%; box-sizing: border-box; }
+    .composer-inputs { display: flex; gap: 10px; width: 100%; align-items: center; }
+    
+    /* Perbaikan penting di #txt: min-width: 0 memperbaiki bug overflow flexbox pada input */
+    #txt { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px 18px; background: #1f2833; color: #fff; font-size: 15px; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); width: 100%; }
     #txt:focus { border-color: #45a29e; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2), 0 0 8px rgba(69, 162, 158, 0.3); }
     
     #replyBanner { padding: 10px 16px; background: linear-gradient(90deg, #2f6f5f, #1f2833); font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px; color: #fff; border: 1px solid rgba(102, 252, 241, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
@@ -118,13 +137,13 @@
     
     .row { display: flex; gap: 12px; justify-content: center; }
     
-    /* AR DOM OVERLAY UI */
-    #ar-ui-container { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
+    /* AR DOM OVERLAY UI - Juga dibatasi lebarnya agar selaras dengan UI chat */
+    #ar-ui-container { position: absolute; inset: 0; margin: 0 auto; max-width: 500px; width: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
     .ar-top { display: flex; justify-content: space-between; pointer-events: auto; }
     #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
     #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
     
-    #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.95); border: 1px solid #45a29e; border-radius: 999px; padding: 12px 24px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 20px rgba(0,0,0,0.5); font-weight: 600; }
+    #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.95); border: 1px solid #45a29e; border-radius: 999px; padding: 12px 24px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 20px rgba(0,0,0,0.5); font-weight: 600; max-width: 90vw; text-align: center; }
   </style>
 </head>
 <body>
@@ -213,6 +232,7 @@
 </div>
 
 <!-- A-FRAME SCENE -->
+<!-- AR Container dibiarkan 100% full viewport -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
   <a-scene 
     webxr="optionalFeatures: hit-test"
@@ -466,7 +486,6 @@
     msgs.forEach((m, i) => {
       const wrap = document.createElement('div');
       
-      // PERBAIKAN: Prioritaskan pengecekan event agar posisi class "evt" tidak tertimpa
       wrap.className = 'msg-wrap ' + (m.kind === 'event' ? 'evt' : (m.dir === 'out' ? 'out' : 'in'));
 
       const d = document.createElement('div');
@@ -501,7 +520,6 @@
         }
       };
 
-      // PERBAIKAN: Urutan elemen untuk event agar berdampingan rapi
       if (m.kind === 'event') {
         wrap.appendChild(d);
         wrap.appendChild(delBtn);
