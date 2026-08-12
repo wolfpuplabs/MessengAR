@@ -41,13 +41,13 @@
       backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05);
       box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       z-index: 10;
-      position: relative; /* Perbaikan agar elemen absolut bekerja */
+      position: relative;
     }
     .logo { 
       font-size: 24px; font-weight: 800; margin: 0; 
       background: linear-gradient(90deg, #66fcf1, #45a29e); 
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-      position: absolute; /* Perbaikan agar logo selalu di tengah layar */
+      position: absolute;
       left: 50%;
       transform: translateX(-50%);
     }
@@ -344,7 +344,7 @@
       incFrom: "Pesan rahasia dari ",
       confirmClear: "Yakin ingin menghapus semua pesan?",
       confirmDelMsg: "Hapus pesan ini?",
-      genLink: "Membuat link pendek... ⏳"
+      genLink: "Membuat link pendek... "
     },
     en: {
       btnSend: "Send",
@@ -384,7 +384,7 @@
       incFrom: "Secret message from ",
       confirmClear: "Are you sure you want to clear the chat?",
       confirmDelMsg: "Delete this message?",
-      genLink: "Generating short link... ⏳"
+      genLink: "Generating short link... "
     }
   };
 
@@ -465,7 +465,9 @@
     
     msgs.forEach((m, i) => {
       const wrap = document.createElement('div');
-      wrap.className = 'msg-wrap ' + (m.dir === 'out' ? 'out' : (m.kind === 'event' ? 'evt' : 'in'));
+      
+      // PERBAIKAN: Prioritaskan pengecekan event agar posisi class "evt" tidak tertimpa
+      wrap.className = 'msg-wrap ' + (m.kind === 'event' ? 'evt' : (m.dir === 'out' ? 'out' : 'in'));
 
       const d = document.createElement('div');
       if (m.kind === 'event') {
@@ -486,7 +488,6 @@
         d.innerHTML = html;
       }
 
-      // Tombol Hapus per pesan individu (Tanpa Emoji)
       const delBtn = document.createElement('button');
       delBtn.className = 'del-btn';
       delBtn.innerHTML = 'X';
@@ -500,13 +501,13 @@
         }
       };
 
-      // Urutan susunan berdasarkan posisi (kanan = out, kiri = in)
-      if (m.dir === 'out') {
-        wrap.appendChild(delBtn);
-        wrap.appendChild(d);
-      } else if (m.kind === 'event' && m.dir !== 'out') {
+      // PERBAIKAN: Urutan elemen untuk event agar berdampingan rapi
+      if (m.kind === 'event') {
         wrap.appendChild(d);
         wrap.appendChild(delBtn);
+      } else if (m.dir === 'out') {
+        wrap.appendChild(delBtn);
+        wrap.appendChild(d);
       } else {
         wrap.appendChild(d);
         wrap.appendChild(delBtn);
