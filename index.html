@@ -12,6 +12,86 @@
   <!-- Mesin Animasi -->
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
+  <!-- Komponen Naga Terbang Random -->
+  <script>
+    AFRAME.registerComponent('random-flight', {
+      init: function () {
+        this.state = 'idle';
+        this.homePos = '0 0.2 0';
+        
+        // Mulai dengan animasi melayang diam
+        this.startIdle();
+
+        // Cek setiap 8 detik untuk memulai penerbangan random
+        this.flightTimer = setInterval(() => {
+          const dragon = document.getElementById('dragon-entity');
+          const isVisible = dragon ? dragon.getAttribute('visible') : false;
+          
+          // Pastikan naga sedang tampil di dunia AR dan sedang menganggur
+          if ((isVisible === true || isVisible === 'true') && this.state === 'idle') {
+            this.flyRandomly();
+          }
+        }, 8000);
+
+        // Dengarkan event ketika animasi selesai untuk berpindah status
+        this.el.addEventListener('animationcomplete__fly', (e) => {
+          if (this.state === 'flying') {
+            // Setelah sampai di titik random, diam 1 detik lalu pulang
+            setTimeout(() => this.returnHome(), 1000);
+          } else if (this.state === 'returning') {
+            // Setelah pulang, kembali melayang diam (idle)
+            this.startIdle();
+          }
+        });
+      },
+      
+      startIdle: function() {
+        this.state = 'idle';
+        this.el.removeAttribute('animation__fly');
+        this.el.setAttribute('animation__fly', {
+          property: 'position',
+          from: '0 0.2 0',
+          to: '0 0.28 0',
+          dir: 'alternate',
+          dur: 1500,
+          loop: true,
+          easing: 'easeInOutSine'
+        });
+      },
+      
+      flyRandomly: function() {
+        this.state = 'flying';
+        this.el.removeAttribute('animation__fly');
+        
+        // Tentukan titik acak (radius sekitar 0.8 meter dari titik tengah)
+        const x = (Math.random() - 0.5) * 1.6; 
+        const y = 0.2 + (Math.random() * 0.6); // Ketinggian bervariasi
+        const z = (Math.random() - 0.5) * 1.6; 
+
+        this.el.setAttribute('animation__fly', {
+          property: 'position',
+          to: `${x} ${y} ${z}`,
+          dur: 3000, // Kecepatan terbang (3 detik)
+          loop: false,
+          easing: 'easeInOutQuad'
+        });
+      },
+      
+      returnHome: function() {
+        this.state = 'returning';
+        this.el.removeAttribute('animation__fly');
+        
+        this.el.setAttribute('animation__fly', {
+          property: 'position',
+          to: this.homePos,
+          dur: 2500, // Pulang sedikit lebih cepat (2.5 detik)
+          loop: false,
+          easing: 'easeInOutQuad'
+        });
+      }
+    });
+  </script>
+
   <style>
     /* ============ UI/UX REDESIGN: GLASSMORPHISM & PREMIUM BUBBLES ============ */
     * { box-sizing: border-box; }
@@ -48,7 +128,7 @@
       max-width: 400px;
     }
     
-    /* FIX 1: Header menggunakan Grid agar judul presisi di tengah layar */
+    /* Header menggunakan Grid agar judul presisi di tengah layar */
     header { 
       display: grid; 
       grid-template-columns: 1fr auto 1fr;
@@ -94,7 +174,7 @@
     .msg-wrap.out { justify-content: flex-end; }
     .msg-wrap.in { justify-content: flex-start; }
     
-    /* FIX 2: Layout Event Message agar berada tepat di tengah dengan tombol Del melayang secara mutlak */
+    /* Layout Event Message agar berada tepat di tengah dengan tombol Del melayang secara mutlak */
     .msg-wrap.evt { justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px; position: relative; }
     
     .bub { max-width: 75%; padding: 14px 18px; border-radius: 20px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.25); transition: transform 0.2s ease; }
@@ -260,7 +340,8 @@
     </a-entity>
 
     <a-entity id="dragon-entity" visible="false" position="0 0 0">
-      <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.28 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
+      <!-- Panggil random-flight di sini -->
+      <a-entity id="dragon-mover" random-flight>
         <a-entity 
           gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
           scale="0.002 0.002 0.002" 
