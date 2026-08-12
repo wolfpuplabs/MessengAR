@@ -13,6 +13,7 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
   <script>
+    // Komponen Penerbangan Acak Naga
     AFRAME.registerComponent('random-flight', {
       init: function () {
         this.state = 'idle';
@@ -56,6 +57,54 @@
         this.state = 'returning';
         this.el.removeAttribute('animation__fly');
         this.el.setAttribute('animation__fly', { property: 'position', to: this.homePos, dur: 2500, loop: false, easing: 'easeInOutQuad' });
+      }
+    });
+
+    // Komponen Fire Fairy Dust
+    AFRAME.registerComponent('fire-dust', {
+      init: function () {
+        const colors = ['#ff2a00', '#ff7700', '#ffcc00', '#ffe600']; // Gradasi Api & Emas
+        const particleCount = 18;
+
+        for (let i = 0; i < particleCount; i++) {
+          const p = document.createElement('a-sphere');
+          
+          // Posisi awal acak di sekitar naga
+          const radius = 0.12 + Math.random() * 0.18;
+          const angle = Math.random() * Math.PI * 2;
+          const x = Math.cos(angle) * radius;
+          const z = Math.sin(angle) * radius;
+          const y = (Math.random() - 0.2) * 0.3;
+
+          const size = 0.003 + Math.random() * 0.005;
+          const color = colors[Math.floor(Math.random() * colors.length)];
+          const dur = 800 + Math.random() * 1200;
+
+          p.setAttribute('radius', size);
+          p.setAttribute('position', `${x} ${y} ${z}`);
+          p.setAttribute('material', `shader: flat; color: ${color}; transparent: true; opacity: 0.9`);
+
+          // Animasi naik memudar seperti percikan api
+          p.setAttribute(`animation__float`, {
+            property: 'position',
+            to: `${x + (Math.random()-0.5)*0.08} ${y + 0.15 + Math.random()*0.15} ${z + (Math.random()-0.5)*0.08}`,
+            dur: dur,
+            loop: true,
+            dir: 'normal',
+            easing: 'easeOutQuad'
+          });
+
+          p.setAttribute(`animation__fade`, {
+            property: 'material.opacity',
+            from: 0.9,
+            to: 0,
+            dur: dur,
+            loop: true,
+            easing: 'easeInQuad'
+          });
+
+          this.el.appendChild(p);
+        }
       }
     });
   </script>
@@ -218,7 +267,7 @@
 
 <div id="toast" hidden></div>
 <audio id="arMessageAudio" hidden></audio>
-<!-- TAMBAHAN: Audio Muncul -->
+<!-- SFX Suara Muncul -->
 <audio id="spawnSound" src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=magic-spell-8780.mp3" preload="auto" hidden></audio>
 
 <div id="ar-ui-container" hidden>
@@ -248,15 +297,19 @@
     
     <a-entity id="dragon-entity" visible="false" position="0 0 0">
       
-      <!-- TAMBAHAN: Partikel Magic Burst -->
+      <!-- Partikel Magic Burst saat muncul -->
       <a-entity id="magic-burst" visible="false" position="0 0.1 0">
-        <a-ring id="magic-ring" color="#66fcf1" radius-inner="0.05" radius-outer="0.1" rotation="-90 0 0" material="shader: flat; transparent: true; opacity: 1"></a-ring>
-        <a-sphere id="magic-sphere" color="#ffffff" radius="0.05" material="shader: flat; transparent: true; opacity: 1"></a-sphere>
+        <a-ring id="magic-ring" color="#ff7700" radius-inner="0.05" radius-outer="0.1" rotation="-90 0 0" material="shader: flat; transparent: true; opacity: 1"></a-ring>
+        <a-sphere id="magic-sphere" color="#ffcc00" radius="0.05" material="shader: flat; transparent: true; opacity: 1"></a-sphere>
       </a-entity>
 
       <a-entity id="dragon-mover" random-flight>
+        <!-- Model Naga -->
         <a-entity gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" scale="0.002 0.002 0.002" position="0 0 0" animation-mixer></a-entity>
         
+        <!-- FIRE FAIRY DUST PARTICLES (Mengikuti Gerakan Naga) -->
+        <a-entity id="dragon-fire-dust" fire-dust position="0 0.05 0"></a-entity>
+
         <a-entity id="dragon-bubble" look-at="[camera]" position="0 0.45 0" visible="false">
           <a-entity id="bubble-bg" position="0 0 -0.01">
             <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
@@ -279,12 +332,12 @@
   // ! PENTING: ISI CONFIG FIREBASE INI DENGAN MILIKMU SENDIRI !
   const firebaseConfig = {
     apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
-authDomain: "messeng-ar.firebaseapp.com",
-databaseURL: "https://messeng-ar-default-rtdb.asia-southeast1.firebasedatabase.app",
-projectId: "messeng-ar",
-storageBucket: "messeng-ar.firebasestorage.app",
-messagingSenderId: "797659694923",
-appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
+    authDomain: "messeng-ar.firebaseapp.com",
+    databaseURL: "https://messeng-ar-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "messeng-ar",
+    storageBucket: "messeng-ar.firebasestorage.app",
+    messagingSenderId: "797659694923",
+    appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
   };
   
   firebase.initializeApp(firebaseConfig);
@@ -664,14 +717,14 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
       $('#btnPlace').hidden = true; 
       $('#arHint').hidden = true; 
 
-      // --- TAMBAHAN KODE: PLAY SOUND ---
+      // PLAY SOUND
       const sfx = document.getElementById('spawnSound');
       if(sfx) { 
         sfx.currentTime = 0; 
         sfx.play().catch(e => console.log('Autoplay audio diblokir:', e)); 
       }
 
-      // --- TAMBAHAN KODE: ANIMASI PARTIKEL ---
+      // ANIMASI MAGIC BURST
       const burst = document.getElementById('magic-burst');
       const mRing = document.getElementById('magic-ring');
       const mSphere = document.getElementById('magic-sphere');
@@ -691,7 +744,6 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
         
         setTimeout(() => burst.setAttribute('visible', 'false'), 900);
       }
-      // --- AKHIR TAMBAHAN KODE ---
 
       if (currentPayload) {
         const textStr = currentPayload.text || ""; textEl.setAttribute('text', 'value', textStr);
