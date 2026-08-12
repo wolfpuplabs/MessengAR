@@ -202,44 +202,49 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Pembungkus Utama (Memisahkan skala Naga dan UI agar tidak bertabrakan) -->
+    <!-- Pembungkus Utama -->
     <a-entity id="dragon-entity" visible="false">
         
-      <!-- 3D Model Naga dengan Efek Melayang Naik-Turun -->
-      <a-entity 
-        gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
-        scale="0.002 0.002 0.002" 
-        animation-mixer="clip: *; loop: repeat"
-        animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
-      </a-entity>
-      
-      <!-- 3D Text & Tombol Melayang -->
-      <a-entity 
-        id="dragon-bubble"
-        position="0 0.5 0"
-        look-at="[camera]"
-        visible="false">
+      <!-- Wrapper Khusus Efek Melayang Naik-Turun (Membawa Naga & Teks UI sekaligus) -->
+      <a-entity animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
         
+        <!-- 3D Model Naga: Posisinya dinaikkan (Y=0.25) agar ada ruang untuk tombol di bawahnya -->
         <a-entity 
-          id="dragon-text" 
-          text="value: ...; font: roboto; align: center; width: 0.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
-          position="0 0 0">
+          gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
+          scale="0.002 0.002 0.002" 
+          position="0 0.25 0"
+          animation-mixer="clip: Take 001_Skeleton; loop: repeat">
         </a-entity>
         
-        <!-- Tombol 3D Balas/Kembali -->
-        <a-entity id="dragon-action-btn" position="0 -0.25 0" visible="false">
-          <!-- Badan Kapsul -->
-          <a-plane id="btn-body" width="0.2" height="0.06" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
-          <!-- Lengkungan Kiri -->
-          <a-circle id="btn-left" radius="0.03" position="-0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
-          <!-- Lengkungan Kanan -->
-          <a-circle id="btn-right" radius="0.03" position="0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
-          <!-- Teks Tombol -->
-          <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 0.4; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
+        <!-- 3D Text & Tombol Melayang -->
+        <a-entity 
+          id="dragon-bubble"
+          position="0 0.25 0"
+          look-at="[camera]"
+          visible="false">
+          
+          <!-- Teks ditaruh di ATAS naga (Posisi Y Positif) -->
+          <a-entity 
+            id="dragon-text" 
+            text="value: ...; font: roboto; align: center; width: 0.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
+            position="0 0.45 0">
+          </a-entity>
+          
+          <!-- Tombol ditaruh di BAWAH naga (Posisi Y Negatif) -->
+          <a-entity id="dragon-action-btn" position="0 -0.15 0" visible="false">
+            <!-- Badan Kapsul -->
+            <a-plane id="btn-body" width="0.2" height="0.06" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
+            <!-- Lengkungan Kiri -->
+            <a-circle id="btn-left" radius="0.03" position="-0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <!-- Lengkungan Kanan -->
+            <a-circle id="btn-right" radius="0.03" position="0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <!-- Teks Tombol -->
+            <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 0.4; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
+          </a-entity>
+          
         </a-entity>
-        
+
       </a-entity>
-      
     </a-entity>
   </a-scene>
 </div>
