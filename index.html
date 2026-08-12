@@ -207,11 +207,12 @@
         
       <!-- MODIFIKASI: 3D Model Naga dengan Efek Melayang Naik-Turun -->
       <a-entity 
-        gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
-        scale="0.002 0.002 0.002" 
-        animation-mixer="clip: *; loop: repeat"
-        animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
-      </a-entity>
+  gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
+  scale="0.002 0.002 0.002" 
+  animation-mixer="clip: Fly; loop: repeat"
+  animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
+</a-entity>
+
       
       <!-- 3D Text & Tombol Melayang -->
       <a-entity 
