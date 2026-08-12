@@ -202,17 +202,18 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Pembungkus Utama (Memisahkan skala Naga dan UI agar tidak bertabrakan) -->
+    <!-- Pembungkus Utama -->
     <a-entity id="dragon-entity" visible="false">
         
-      <!-- 3D Model Naga (Kamu bisa mengubah angka 0.002 ini untuk mengatur ukuran naganya saja!) -->
+      <!-- MODIFIKASI: 3D Model Naga dengan Efek Melayang Naik-Turun -->
       <a-entity 
         gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
         scale="0.002 0.002 0.002" 
-        animation-mixer="clip: *">
+        animation-mixer="clip: *; loop: repeat"
+        animation="property: position; from: 0 0 0; to: 0 0.08 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
       </a-entity>
       
-      <!-- 3D Text & Tombol Melayang (Skala dan Posisinya sudah aman, jangan diubah) -->
+      <!-- 3D Text & Tombol Melayang -->
       <a-entity 
         id="dragon-bubble"
         position="0 0.5 0"
