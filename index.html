@@ -9,7 +9,7 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   
-  <!-- Mesin Animasi (Diperbarui ke v7.2.0) -->
+  <!-- Mesin Animasi -->
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
   <style>
@@ -184,8 +184,8 @@
 </div>
 
 <!-- A-FRAME SCENE -->
-<!-- MODIFIKASI: Menambahkan device-orientation-permission-ui="enabled: false" untuk menyembunyikan pop-up Deny/Allow -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
+  <!-- device-orientation-permission-ui dimatikan agar pop-up Deny/Allow di iOS hilang -->
   <a-scene 
     webxr="optionalFeatures: hit-test"
     renderer="colorManagement: true"
@@ -204,13 +204,13 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Pembungkus Utama -->
+    <!-- Pembungkus Utama (Titik tengah berada di permukaan lantai) -->
     <a-entity id="dragon-entity" visible="false" position="0 0 0">
         
       <!-- Wrapper Khusus Efek Melayang Naik-Turun (Membawa Naga & Teks UI sekaligus) -->
       <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.28 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
         
-        <!-- 3D Model Naga (Animasi kepak sayap dipaksa putar semua) -->
+        <!-- 3D Model Naga -->
         <a-entity 
           gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
           scale="0.002 0.002 0.002" 
@@ -218,7 +218,7 @@
           animation-mixer>
         </a-entity>
         
-        <!-- Wrapper UI yang selalu mengikuti arah pandangan Kamera -->
+        <!-- Wrapper UI yang selalu menghadap Kamera -->
         <a-entity look-at="[camera]">
           
           <!-- BALON TEKS (Ditarik ke atas kepala naga Y=0.35) -->
@@ -227,11 +227,11 @@
             position="0 0.35 0"
             visible="false">
             
-            <!-- Background Balon Kapsul Hitam Transparan -->
+            <!-- Background Balon Teks (Diberi ID agar bisa dimanipulasi dengan JS) -->
             <a-entity position="0 0 -0.01">
-              <a-plane width="0.8" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7"></a-plane>
-              <a-circle radius="0.1" position="-0.4 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7; segments: 32"></a-circle>
-              <a-circle radius="0.1" position="0.4 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7; segments: 32"></a-circle>
+              <a-plane id="bubble-bg-plane" width="0.8" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7"></a-plane>
+              <a-circle id="bubble-bg-left" radius="0.1" position="-0.4 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7; segments: 32"></a-circle>
+              <a-circle id="bubble-bg-right" radius="0.1" position="0.4 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7; segments: 32"></a-circle>
             </a-entity>
 
             <!-- Teks -->
@@ -746,7 +746,41 @@
       $('#arHint').hidden = true; 
 
       if (currentPayload) {
-        textEl.setAttribute('text', 'value', currentPayload.text);
+        // Terapkan Teks
+        const textStr = currentPayload.text || "";
+        textEl.setAttribute('text', 'value', textStr);
+        
+        // ==========================================
+        // FITUR BARU: RESPONSIVE BALLOON BUBBLE
+        // ==========================================
+        // Hitung baris dan jumlah karakter
+        const linesArr = textStr.split('\n');
+        let totalLines = 0;
+        let maxLineLen = 0;
+        linesArr.forEach(line => {
+          totalLines += Math.max(1, Math.ceil(line.length / 22)); // Max 22 char per baris
+          if (line.length > maxLineLen) maxLineLen = line.length;
+        });
+        
+        // Atur Lebar Kapsul secara dinamis (mentok maksimal di karakter ke-22)
+        const charLen = Math.min(maxLineLen, 22);
+        let dynWidth = Math.max(0.2, (charLen * 0.036) + 0.08); // 0.036 = rasio lebar per huruf
+        
+        // Atur Tinggi Kapsul secara dinamis (bertambah 0.12 setiap baris tambahan)
+        let dynHeight = Math.max(0.2, (totalLines * 0.12) + 0.08);
+        let dynRadius = dynHeight / 2; // Biar lengkungan ujungnya pas mengikuti tinggi
+        
+        // Terapkan ke 3 elemen background
+        document.getElementById('bubble-bg-plane').setAttribute('width', dynWidth);
+        document.getElementById('bubble-bg-plane').setAttribute('height', dynHeight);
+        
+        document.getElementById('bubble-bg-left').setAttribute('radius', dynRadius);
+        document.getElementById('bubble-bg-left').setAttribute('position', `${-dynWidth / 2} 0 0`);
+        
+        document.getElementById('bubble-bg-right').setAttribute('radius', dynRadius);
+        document.getElementById('bubble-bg-right').setAttribute('position', `${dynWidth / 2} 0 0`);
+        // ==========================================
+
         bubble.setAttribute('visible', 'true');
         
         speakAndPlay(currentPayload, () => {
