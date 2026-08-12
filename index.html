@@ -112,4 +112,712 @@
             dur: dur / 2, // Separuh waktu untuk terang, separuh untuk meredup
             delay: delay,
             loop: true,
-            dir: 'alternate', // Efek memudar bolak-balik (
+            dir: 'alternate', // Efek memudar bolak-balik (0 -> terang -> 0)
+            easing: 'easeInOutSine'
+          });
+
+          this.el.appendChild(p);
+        }
+      }
+    });
+  </script>
+
+  <style>
+    /* UI/UX REDESIGN & TATA LETAK */
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #0b0c10; color: #f0f4f8; height: 100vh; overflow: hidden; }
+    .screen { position: absolute; inset: 0; margin: 0 auto; max-width: 500px; width: 100%; display: flex; flex-direction: column; z-index: 20; background: #0b0c10; }
+    
+    .glass-panel { background: rgba(22, 26, 32, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 24px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 90%; max-width: 400px; }
+    
+    /* Header Grid (Judul Presisi di Tengah) */
+    header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 20px; background: rgba(11, 12, 16, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 10; position: relative; }
+    .logo { font-size: 24px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
+    
+    .primary-btn { background: linear-gradient(135deg, #45a29e, #1f2833); color: #fff; border: none; border-radius: 16px; padding: 14px 20px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3); pointer-events: auto; flex-shrink: 0; white-space: nowrap; }
+    .primary-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(69, 162, 158, 0.2); }
+    .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    
+    .iconbtn { width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(102, 252, 241, 0.2); background: #1f2833; color: #66fcf1; font-size: 14px; font-weight: bold; cursor: pointer; flex: none; pointer-events: auto; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.2); flex-shrink: 0; }
+    .iconbtn:active { transform: scale(0.92); background: #2f3e4f; }
+    
+    /* Area Chat */
+    #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+    .msg-wrap { display: flex; align-items: flex-end; gap: 8px; width: 100%; margin-bottom: 8px; position: relative; }
+    .msg-wrap.out { justify-content: flex-end; }
+    .msg-wrap.in { justify-content: flex-start; }
+    
+    /* Event Bubbles (Presisi di Tengah) */
+    .msg-wrap.evt { justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px; position: relative; }
+    
+    .bub { max-width: 75%; padding: 14px 18px; border-radius: 20px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.25); transition: transform 0.2s ease; }
+    .bub small { display: block; opacity: 0.5; font-size: 11px; margin-top: 6px; }
+    .bub audio { max-width: 100%; display: block; margin-top: 8px; height: 36px; outline: none; border-radius: 18px; }
+    .out-bub { background: linear-gradient(135deg, #1f2833, #161c24); border-bottom-right-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.3); }
+    .in-bub { background: #202428; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.08); }
+    
+    .bub-event { background: rgba(69, 162, 158, 0.15); border: 1px dashed #45a29e; border-radius: 999px; padding: 10px 20px; font-size: 12px; cursor: pointer; color: #66fcf1; transition: all 0.2s ease; box-shadow: 0 0 10px rgba(69, 162, 158, 0.1); }
+    .bub-event:active { transform: scale(0.95); background: rgba(69, 162, 158, 0.25); }
+    
+    /* Tombol Hapus */
+    .del-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ff6b6b; font-size: 10px; font-weight: bold; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; width: 28px; height: 28px; flex-shrink: 0; opacity: 0.5; margin-bottom: 6px; }
+    .del-btn:hover, .del-btn:active { opacity: 1; background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; transform: scale(1.1); }
+    .evt .del-btn { margin-bottom: 0; position: absolute; right: 0; }
+    
+    /* Komposer Bawah */
+    .composer { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: rgba(11, 12, 16, 0.95); border-top: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(10px); box-shadow: 0 -4px 20px rgba(0,0,0,0.3); z-index: 10; width: 100%; box-sizing: border-box; }
+    .composer-inputs { display: flex; gap: 10px; width: 100%; align-items: center; }
+    
+    /* Toggle Auto-Delete */
+    .auto-delete-bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; font-size: 12px; color: #c5c6c7; }
+    .toggle-switch { position: relative; display: inline-block; width: 38px; height: 20px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #1f2833; transition: .3s; border-radius: 20px; border: 1px solid rgba(102, 252, 241, 0.3); }
+    .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 2px; bottom: 2px; background-color: #66fcf1; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: #45a29e; }
+    input:checked + .slider:before { transform: translateX(18px); background-color: #fff; }
+    
+    #txt { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px 18px; background: #1f2833; color: #fff; font-size: 15px; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); width: 100%; }
+    #txt:focus { border-color: #45a29e; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2), 0 0 8px rgba(69, 162, 158, 0.3); }
+    
+    #replyBanner { padding: 10px 16px; background: linear-gradient(90deg, #2f6f5f, #1f2833); font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px; color: #fff; border: 1px solid rgba(102, 252, 241, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    
+    .mic-on { background: #e33 !important; color: #fff !important; border-color: #ff6b6b !important; animation: pulse 1s infinite; box-shadow: 0 0 15px rgba(238, 51, 51, 0.5) !important; }
+    @keyframes pulse { 50% { transform: scale(1.08); } }
+    
+    .overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(8px); z-index: 30; }
+    .overlay h2 { margin: 0 0 10px 0; font-size: 22px; color: #fff; }
+    .overlay p { margin: 0 0 20px 0; color: #c5c6c7; font-size: 14.5px; line-height: 1.5; }
+    
+    #shareLink { background: #0b0c10; border: 1px solid rgba(102, 252, 241, 0.3); border-radius: 12px; padding: 14px; font-size: 13px; color: #66fcf1; word-break: break-all; margin-bottom: 20px; max-height: 100px; overflow-y: auto; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5); }
+    .row { display: flex; gap: 12px; justify-content: center; }
+    
+    /* AR UI DOM */
+    #ar-ui-container { position: absolute; inset: 0; margin: 0 auto; max-width: 500px; width: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
+    .ar-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; pointer-events: auto; }
+    #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
+    #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
+    
+    #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.95); border: 1px solid #45a29e; border-radius: 999px; padding: 12px 24px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 20px rgba(0,0,0,0.5); font-weight: 600; max-width: 90vw; text-align: center; }
+  </style>
+</head>
+<body>
+
+<div id="screen-chat" class="screen">
+  <header>
+    <div style="display: flex; justify-content: flex-start;">
+      <button id="btnClear" class="iconbtn" title="Bersihkan Obrolan">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+      </button>
+    </div>
+    <h1 class="logo">MESSENG-AR</h1>
+    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+      <button id="btnLang" class="iconbtn" style="width: 36px; height: 36px;" title="Ganti Bahasa">ID</button>
+      <button id="btnName" class="iconbtn" style="width: 36px; height: 36px; font-size: 12px;" title="Ganti Nama">Edit</button>
+    </div>
+  </header>
+  <div id="msgs"></div>
+  
+  <div class="composer">
+    <div id="replyBanner" hidden>
+      <span id="replyLabel"></span>
+      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;border:none;" id="btnCancelReply">X</button>
+    </div>
+    
+    <div class="composer-inputs">
+      <button id="btnMic" class="iconbtn" title="Rekam Suara">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+      </button>
+      
+      <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
+      
+      <button id="btnSend" class="primary-btn" style="width: 48px; height: 48px; padding: 0; display: flex; align-items: center; justify-content: center;" title="Kirim">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+      </button>
+    </div>
+
+    <div class="auto-delete-bar">
+      <span id="lblAutoDelete">Hapus otomatis setelah dibaca</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="chkAutoDelete">
+        <span class="slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<div id="screen-share" class="screen overlay" hidden>
+  <div class="glass-panel">
+    <h2 id="shareTitleUI">Pesan Siap Terbang!</h2>
+    <p id="shareDescUI">Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.</p>
+    <div id="shareLink"></div>
+    <div class="row">
+      <button id="btnShare" class="primary-btn" disabled>Share</button>
+      <button id="btnCopy" class="primary-btn" disabled>Copy</button>
+      <button id="btnShareBack" class="iconbtn" style="border:none;">X</button>
+    </div>
+  </div>
+</div>
+
+<div id="screen-incoming" class="screen overlay" hidden>
+  <div class="glass-panel">
+    <h2 id="incTitleUI">Courier Tiba!</h2>
+    <p id="incFrom"></p>
+    <button id="btnAccept" class="primary-btn" style="display: none; margin: 0 auto; width: 100%;">Buka di AR</button>
+    <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%; border:none;">Tutup</button>
+  </div>
+</div>
+
+<div id="nameModal" class="screen overlay" hidden>
+  <div class="glass-panel">
+    <h2 id="nameTitleUI">Selamat Datang</h2>
+    <p id="nameDescUI">Masukkan nama kamu sebagai pengirim:</p>
+    <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center; outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai</button>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+<audio id="arMessageAudio" hidden></audio>
+<audio id="spawnSound" src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=magic-spell-8780.mp3" preload="auto" hidden></audio>
+
+<div id="ar-ui-container" hidden>
+  <div class="ar-top">
+    <div><button id="btnBackAR" class="iconbtn">&lt;</button></div>
+    <h1 class="logo">MESSENG-AR</h1>
+    <div></div>
+  </div>
+  <div id="arHint">Pindai lantai hingga cincin putih muncul.</div>
+  <div id="arBtns">
+    <button id="btnPlace" class="primary-btn" hidden>Tampilkan Pesan</button>
+    <button id="btnReply" class="primary-btn" hidden>Balas Pesan</button>
+    <button id="btnBack" class="primary-btn" hidden>Kembali</button>
+  </div>
+</div>
+
+<div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
+  <a-scene webxr="optionalFeatures: hit-test, dom-overlay; overlayElement: #ar-ui-container;" renderer="colorManagement: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" transparent="true">
+    <a-camera id="camera" position="0 1.6 0"></a-camera>
+    <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
+    <a-light type="ambient" intensity="0.6"></a-light>
+    <a-entity id="xr-manager" webxr-hit-test></a-entity>
+    
+    <a-entity id="reticle" visible="false">
+      <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
+    </a-entity>
+    
+    <a-entity id="dragon-entity" visible="false" position="0 0 0">
+      
+      <a-entity id="magic-burst" visible="false" position="0 0.1 0">
+        <a-ring id="magic-ring" color="#ff7700" radius-inner="0.05" radius-outer="0.1" rotation="-90 0 0" material="shader: flat; transparent: true; opacity: 1"></a-ring>
+        <a-sphere id="magic-sphere" color="#ffffff" radius="0.05" material="shader: flat; transparent: true; opacity: 1"></a-sphere>
+      </a-entity>
+
+      <a-entity id="dragon-mover" random-flight>
+        <a-entity gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" scale="0.002 0.002 0.002" position="0 0 0" animation-mixer></a-entity>
+        
+        <a-entity id="dragon-fire-dust" fire-dust position="0 0.02 -0.05"></a-entity>
+
+        <a-entity id="dragon-bubble" look-at="[camera]" position="0 0.45 0" visible="false">
+          <a-entity id="bubble-bg" position="0 0 -0.01">
+            <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
+            <a-plane id="bg-cross" width="0.72" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
+            <a-circle id="bg-tl" radius="0.04" position="-0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+            <a-circle id="bg-tr" radius="0.04" position="0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+            <a-circle id="bg-bl" radius="0.04" position="-0.36 -0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+            <a-circle id="bg-br" radius="0.04" position="0.36 -0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+            <a-triangle id="bg-tail" vertex-a="0 -0.04 0" vertex-b="-0.05 0.02 0" vertex-c="0.05 0.02 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8" position="0 -0.1 0"></a-triangle>
+          </a-entity>
+          <a-entity id="dragon-text" text="value: ...; font: roboto; align: center; anchor: center; baseline: center; width: 0.85; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.05" position="0 0 0"></a-entity>
+        </a-entity>
+      </a-entity>
+    </a-entity>
+  </a-scene>
+</div>
+
+<script>
+  /* ================= INISIALISASI FIREBASE ================= */
+  // ! PENTING: ISI CONFIG FIREBASE INI DENGAN MILIKMU SENDIRI !
+  const firebaseConfig = {
+    apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
+    authDomain: "messeng-ar.firebaseapp.com",
+    databaseURL: "https://messeng-ar-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "messeng-ar",
+    storageBucket: "messeng-ar.firebasestorage.app",
+    messagingSenderId: "797659694923",
+    appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
+  };
+  
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  /* ================= UTIL & STORAGE ================= */
+  const $ = s => document.querySelector(s);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const baseLink = () => location.href.split('?')[0].split('#')[0]; 
+  function toast(t, ms = 2500) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(e._t); e._t = setTimeout(() => e.hidden = true, ms); }
+
+  const store = {
+    get(k, d) { try { return localStorage.getItem(k) || d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+  };
+
+  /* ================= I18N (LANGUAGE) ================= */
+  const i18n = {
+    id: {
+      btnSend: "Kirim", plcTxt: "Ketik pesan...", replyLabel: "Membalas ke ", lblAutoDel: "Hapus otomatis setelah dibaca",
+      titleShare: "Pesan Siap Terbang!", descShare: "Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.",
+      btnShare: "Bagikan", btnCopy: "Salin", titleInc: "Kurir Tiba!", btnAccept: "Buka di AR", btnIncLater: "Tutup",
+      titleName: "Selamat Datang", descName: "Masukkan nama kamu sebagai pengirim:", plcName: "Nama...", btnNameSave: "Mulai",
+      arHintScan: "Pindai lantai hingga cincin putih muncul.", arHintFound: "Lantai ditemukan! Sentuh layar untuk memunculkan pesan.",
+      arHintSearch: "Mencari lantai/meja...", arHintLoad: "Memuat AR...", btnPlace: "Tampilkan Pesan", btnReply: "Balas Pesan", btnBack: "Kembali",
+      toastName: "Halo, ", toastClear: "Obrolan dibersihkan", toastMicErr: "Mic tidak didukung", toastMicAtt: "Suara terlampir",
+      toastMicRec: "Merekam... tap Mic untuk stop", toastMicDeny: "Mic tidak diizinkan", toastEmpty: "Ketik pesan atau rekam suara dulu",
+      toastCopy: "Link tersalin!", toastReply: "Membalas pesan ke ", msgSent: "Pesan dikirim", msgArr: "Pesan tiba dari ",
+      shareTitle: "MESSENG-AR", shareText: "Ada pesan AR untukmu!", incFrom: "Pesan rahasia dari ", confirmClear: "Yakin ingin menghapus semua pesan?",
+      confirmDelMsg: "Hapus pesan ini?", errUpload: "Gagal mengunggah pesan ke server", errDownload: "Pesan tidak ditemukan/kadaluwarsa"
+    },
+    en: {
+      btnSend: "Send", plcTxt: "Type a message...", replyLabel: "Replying to ", lblAutoDel: "Auto-delete after read",
+      titleShare: "Message Ready!", descShare: "Share this link with the recipient. When opened, the courier will appear in AR.",
+      btnShare: "Share", btnCopy: "Copy", titleInc: "Courier Arrived!", btnAccept: "Open in AR", btnIncLater: "Close",
+      titleName: "Welcome", descName: "Enter your name as the sender:", plcName: "Name...", btnNameSave: "Start",
+      arHintScan: "Scan the floor until a white ring appears.", arHintFound: "Floor found! Tap the screen to spawn the message.",
+      arHintSearch: "Searching for floor/table...", arHintLoad: "Loading AR...", btnPlace: "Show Message", btnReply: "Reply Message", btnBack: "Back",
+      toastName: "Hello, ", toastClear: "Chat cleared", toastMicErr: "Mic not supported", toastMicAtt: "Voice attached",
+      toastMicRec: "Recording... tap Mic to stop", toastMicDeny: "Mic access denied", toastEmpty: "Type a message or record voice first",
+      toastCopy: "Link copied!", toastReply: "Replying to ", msgSent: "Message sent", msgArr: "Message arrived from ",
+      shareTitle: "MESSENG-AR", shareText: "There's an AR message for you!", incFrom: "Secret message from ", confirmClear: "Are you sure you want to clear the chat?",
+      confirmDelMsg: "Delete this message?", errUpload: "Failed to upload message to server", errDownload: "Message not found or expired"
+    }
+  };
+
+  let lang = store.get('sar_lang', 'id');
+  
+  function applyLang() {
+    const t = i18n[lang];
+    $('#btnSend').title = t.btnSend; 
+    
+    $('#lblAutoDelete').textContent = t.lblAutoDel; $('#txt').placeholder = replyTo ? t.replyLabel + replyTo + '...' : t.plcTxt;
+    if(replyTo) $('#replyLabel').textContent = t.replyLabel + replyTo;
+    $('#shareTitleUI').textContent = t.titleShare; $('#shareDescUI').textContent = t.descShare;
+    $('#btnShare').textContent = t.btnShare; $('#btnCopy').textContent = t.btnCopy;
+    $('#incTitleUI').textContent = t.titleInc; if(currentPayload) $('#incFrom').textContent = t.incFrom + currentPayload.from;
+    $('#btnAccept').textContent = t.btnAccept; $('#btnIncLater').textContent = t.btnIncLater;
+    $('#nameTitleUI').textContent = t.titleName; $('#nameDescUI').textContent = t.descName;
+    $('#nameInput').placeholder = t.plcName; $('#btnNameSave').textContent = t.btnNameSave;
+    $('#btnPlace').textContent = t.btnPlace; $('#btnReply').textContent = t.btnReply; $('#btnBack').textContent = t.btnBack;
+    $('#btnLang').textContent = lang.toUpperCase();
+    
+    const arHintEl = $('#arHint');
+    if (arHintEl.textContent === i18n[lang === 'id' ? 'en' : 'id'].arHintSearch) arHintEl.textContent = t.arHintSearch;
+    else if (arHintEl.textContent === i18n[lang === 'id' ? 'en' : 'id'].arHintScan) arHintEl.textContent = t.arHintScan;
+    renderMsgs();
+  }
+
+  $('#btnLang').onclick = () => { lang = lang === 'id' ? 'en' : 'id'; store.set('sar_lang', lang); applyLang(); };
+
+  /* ================= STATE ================= */
+  let myName = store.get('sar_name', '');
+  let msgs = JSON.parse(store.get('sar_msgs', '[]'));
+  let autoDelete = store.get('sar_autodel', 'false') === 'true';
+  let currentPayload = null; let pendingAudio = null; let lastShare = ''; let replyTo = null; let replyAllowed = false;
+
+  $('#chkAutoDelete').checked = autoDelete;
+  $('#chkAutoDelete').onchange = (e) => { autoDelete = e.target.checked; store.set('sar_autodel', autoDelete); };
+
+  function saveName() {
+    const v = ($('#nameInput').value || '').trim() || 'Anon';
+    $('#nameModal').hidden = true; myName = v; store.set('sar_name', v); toast(i18n[lang].toastName + v + '!');
+  }
+  $('#btnNameSave').onclick = saveName;
+  $('#btnName').onclick = () => { $('#nameInput').value = myName; $('#nameModal').hidden = false; };
+  if (!myName) $('#nameModal').hidden = false;
+
+  $('#btnClear').onclick = () => {
+    if (confirm(i18n[lang].confirmClear)) { msgs = []; store.set('sar_msgs', '[]'); renderMsgs(); toast(i18n[lang].toastClear); }
+  };
+
+  /* ================= RENDER MESSAGES ================= */
+  function renderMsgs() {
+    const t = i18n[lang]; const box = $('#msgs'); box.innerHTML = '';
+    msgs.forEach((m, i) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'msg-wrap ' + (m.kind === 'event' ? 'evt' : (m.dir === 'out' ? 'out' : 'in'));
+
+      const d = document.createElement('div');
+      if (m.kind === 'event') {
+        d.className = 'bub-event'; d.dataset.i = i;
+        const pObj = Array.isArray(m.payload) ? { from: m.payload[2], to: m.payload[3] } : m.payload;
+        const actionTxt = m.dir === 'out' ? t.msgSent + (pObj.to ? (lang === 'id' ? ' ke ' : ' to ') + pObj.to : '') : t.msgArr + pObj.from;
+        d.textContent = actionTxt + ' — Tap';
+      } else {
+        d.className = 'bub ' + (m.dir === 'out' ? 'out-bub' : 'in-bub');
+        let html = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + m.text;
+        if (m.payload && m.payload.audio) html += '<audio controls src="' + m.payload.audio + '"></audio>';
+        html += '<small>' + new Date(m.t).toLocaleTimeString() + '</small>';
+        d.innerHTML = html;
+      }
+
+      const delBtn = document.createElement('button'); delBtn.className = 'del-btn'; delBtn.innerHTML = 'X'; delBtn.title = "Delete";
+      delBtn.onclick = (e) => { 
+        e.stopPropagation(); 
+        if(confirm(t.confirmDelMsg)) { 
+          const msgId = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
+          if (msgId) { db.ref('messages/' + msgId).remove(); }
+          
+          msgs.splice(i, 1); store.set('sar_msgs', JSON.stringify(msgs)); renderMsgs(); 
+        } 
+      };
+
+      if (m.kind === 'event') { wrap.appendChild(d); wrap.appendChild(delBtn); } 
+      else if (m.dir === 'out') { wrap.appendChild(delBtn); wrap.appendChild(d); } 
+      else { wrap.appendChild(d); wrap.appendChild(delBtn); }
+      box.appendChild(wrap);
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function deleteMsgByPayloadId(payloadId) {
+    if (!payloadId) return;
+    msgs = msgs.filter(m => { const pid = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null); return pid !== payloadId; });
+    store.set('sar_msgs', JSON.stringify(msgs)); renderMsgs();
+  }
+
+  $('#msgs').addEventListener('click', e => {
+    const el = e.target.closest('.bub-event'); if (!el) return;
+    const m = msgs[el.dataset.i];
+    if (m && m.payload) {
+      const p = Array.isArray(m.payload) ? { v: m.payload[0], id: m.payload[1], from: m.payload[2], to: m.payload[3], text: m.payload[4], audio: m.payload[5], t: m.payload[6] } : m.payload;
+      openAR(p);
+    }
+  });
+
+  function setReply(name) {
+    replyTo = name; $('#replyBanner').hidden = !name;
+    if (name) { $('#replyLabel').textContent = i18n[lang].replyLabel + name; $('#txt').placeholder = i18n[lang].replyLabel + name + '...'; } 
+    else { $('#txt').placeholder = i18n[lang].plcTxt; }
+  }
+  $('#btnCancelReply').onclick = () => setReply(null);
+
+  /* ================= MIC / AUDIO ================= */
+  let mRec = null;
+  $('#btnMic').onclick = () => {
+    const t = i18n[lang];
+    if (mRec) { mRec.stop(); return; }
+    if (!navigator.mediaDevices) { toast(t.toastMicErr); return; }
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(st => {
+      mRec = new MediaRecorder(st, { audioBitsPerSecond: 20000 }); 
+      const ch = []; mRec.ondataavailable = e => ch.push(e.data);
+      mRec.onstop = () => {
+        st.getTracks().forEach(track => track.stop()); const r = new FileReader();
+        r.onload = () => { pendingAudio = r.result; toast(t.toastMicAtt); };
+        r.readAsDataURL(new Blob(ch, { type: mRec.mimeType }));
+        mRec = null; $('#btnMic').classList.remove('mic-on');
+      };
+      mRec.start(); $('#btnMic').classList.add('mic-on'); toast(t.toastMicRec);
+      setTimeout(() => { if (mRec) mRec.stop() }, 10000); // 10 Detik Maks
+    }).catch(() => toast(t.toastMicDeny));
+  };
+
+  /* ================= SEND TO FIREBASE ================= */
+  $('#btnSend').onclick = async () => {
+    const text = $('#txt').value.trim();
+    if (!text && !pendingAudio) return toast(i18n[lang].toastEmpty);
+    
+    const uniqueId = uid();
+    const payloadObj = { v: 1, id: uniqueId, from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
+    const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
+    
+    $('#screen-share').hidden = false;
+    $('#shareLink').textContent = "Mengunggah pesan ke AR Cloud...";
+    $('#btnShare').disabled = true;
+    $('#btnCopy').disabled = true;
+
+    try {
+      await db.ref('messages/' + uniqueId).set(payloadObj);
+      
+      if (!autoDelete) {
+        msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
+        store.set('sar_msgs', JSON.stringify(msgs));
+        renderMsgs();
+      }
+      
+      lastShare = baseLink() + '?id=' + uniqueId;
+      $('#shareLink').textContent = lastShare;
+      $('#btnShare').disabled = false;
+      $('#btnCopy').disabled = false;
+      
+    } catch (error) {
+      $('#screen-share').hidden = true;
+      toast(i18n[lang].errUpload);
+      console.error(error);
+    }
+    
+    $('#txt').value = ''; pendingAudio = null; $('#btnMic').classList.remove('mic-on'); setReply(null); 
+  };
+
+  $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
+  $('#btnCopy').onclick = () => { navigator.clipboard.writeText(lastShare).then(() => toast(i18n[lang].toastCopy)); };
+  $('#btnShare').onclick = async () => {
+    try { await navigator.share({ title: i18n[lang].shareTitle, text: i18n[lang].shareText, url: lastShare }); } 
+    catch(e) { $('#btnCopy').click(); }
+  };
+
+  /* ================= INCOMING DATA (FIREBASE GET) ================= */
+  const urlParams = new URLSearchParams(window.location.search);
+  const msgId = urlParams.get('id');
+
+  if (msgId) {
+    $('#screen-incoming').hidden = false;
+    $('#incFrom').textContent = "Mengunduh pesan...";
+    
+    db.ref('messages/' + msgId).once('value').then((snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        currentPayload = data;
+        $('#incFrom').textContent = i18n[lang].incFrom + data.from;
+        
+        $('#btnAccept').style.display = 'inline-block';
+      } else {
+        $('#screen-incoming').hidden = true;
+        toast(i18n[lang].errDownload);
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }).catch(e => {
+      $('#screen-incoming').hidden = true;
+      toast(i18n[lang].errDownload);
+    });
+  }
+
+  $('#btnIncLater').onclick = () => $('#screen-incoming').hidden = true;
+  
+  $('#btnAccept').onclick = () => {
+    $('#screen-incoming').hidden = true;
+    if (!autoDelete && currentPayload && currentPayload.from !== myName && !msgs.some(m => {
+      const pid = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null); return pid === currentPayload.id;
+    })) {
+      const compactPayload = [1, currentPayload.id, currentPayload.from, currentPayload.to, currentPayload.text, currentPayload.audio, currentPayload.t];
+      msgs.push({ kind: 'event', dir: 'in', payload: compactPayload, t: Date.now() });
+      store.set('sar_msgs', JSON.stringify(msgs)); renderMsgs();
+    }
+    openAR(currentPayload);
+  };
+
+  /* ================= TTS & AUDIO ================= */
+  let availableVoices = [];
+  function populateVoices() { availableVoices = window.speechSynthesis.getVoices(); }
+  if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
+
+  function speakAndPlay(payload, onFinish) {
+    const audioEl = $('#arMessageAudio');
+    if (payload.audio) {
+      audioEl.src = payload.audio; audioEl.play().catch(() => toast('Audio diblokir perangkat')); audioEl.onended = onFinish;
+    } else if ('speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(payload.text);
+      const targetLang = (lang === 'id') ? 'id-ID' : 'en-US';
+      u.lang = targetLang; u.rate = 0.95; u.pitch = 1.0;
+      if (availableVoices.length === 0) populateVoices();
+      const langVoices = availableVoices.filter(v => v.lang.startsWith(targetLang.substring(0, 2)));
+      let bestVoice = langVoices.find(v => v.name.includes('Premium') || v.name.includes('Enhanced') || v.name.includes('Damayanti') || v.name.includes('Google'));
+      if (bestVoice) u.voice = bestVoice;
+      u.onend = onFinish; u.onerror = onFinish;
+      speechSynthesis.speak(u);
+    } else { setTimeout(onFinish, 2000); }
+  }
+
+  /* ================= WEBXR HIT-TEST ================= */
+  function handleARTap() {
+    const scene = document.querySelector('a-scene');
+    if (scene && scene.is('ar-mode')) {
+      const reticle = document.getElementById('reticle');
+      if (reticle && (reticle.getAttribute('visible') === true || reticle.getAttribute('visible') === 'true')) {
+        $('#btnPlace').click();
+      }
+    }
+  }
+
+  window.addEventListener('touchstart', handleARTap);
+
+  AFRAME.registerComponent('webxr-hit-test', {
+    init: function () {
+      this.xrHitTestSource = null; this.viewerSpace = null; this.refSpace = null;
+      this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
+        let session = this.el.sceneEl.renderer.xr.getSession();
+        session.addEventListener('select', handleARTap);
+        session.requestReferenceSpace('viewer').then((space) => {
+          this.viewerSpace = space;
+          session.requestHitTestSource({ space: this.viewerSpace }).then((hitTestSource) => { this.xrHitTestSource = hitTestSource; });
+        });
+        session.requestReferenceSpace('local-floor').then((space) => { this.refSpace = space; }).catch(() => {
+          session.requestReferenceSpace('local').then((space) => { this.refSpace = space; });
+        });
+      });
+      this.el.sceneEl.renderer.xr.addEventListener('sessionend', () => { this.xrHitTestSource = null; });
+    },
+    tick: function () {
+      if (this.el.sceneEl.is('ar-mode')) {
+        if (!this.viewerSpace) return;
+        const dragon = document.getElementById('dragon-entity');
+        const isDragonVisible = dragon.getAttribute('visible');
+        if (isDragonVisible === true || isDragonVisible === 'true') { document.getElementById('reticle').setAttribute('visible', 'false'); return; }
+
+        let frame = this.el.sceneEl.frame; let xrViewerPose = frame.getViewerPose(this.refSpace);
+        if (this.xrHitTestSource && xrViewerPose) {
+          let hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+          if (hitTestResults.length > 0) {
+            let pose = hitTestResults[0].getPose(this.refSpace); const reticle = document.getElementById('reticle');
+            reticle.setAttribute('position', pose.transform.position); reticle.setAttribute('visible', 'true');
+            if (dragon.getAttribute('visible') === false || dragon.getAttribute('visible') === 'false') {
+                $('#btnPlace').hidden = false; $('#arHint').textContent = i18n[lang].arHintFound;
+            }
+          } else {
+             document.getElementById('reticle').setAttribute('visible', 'false');
+             if (dragon.getAttribute('visible') === false || dragon.getAttribute('visible') === 'false') {
+                $('#btnPlace').hidden = true; $('#arHint').textContent = i18n[lang].arHintSearch;
+             }
+          }
+        }
+      }
+    }
+  });
+
+  /* ================= AR LOGIC & BUBBLE ================= */
+  function calculateWrappedLines(str, maxChars = 26) {
+    const paragraphs = str.split('\n'); let lineCount = 0; let maxLen = 0;
+    paragraphs.forEach(para => {
+      if (para.length === 0) { lineCount++; return; }
+      const words = para.split(' '); let currentLineLen = 0;
+      words.forEach(word => {
+        if (currentLineLen === 0) currentLineLen = word.length;
+        else if (currentLineLen + 1 + word.length <= maxChars) currentLineLen += 1 + word.length;
+        else { lineCount++; maxLen = Math.max(maxLen, currentLineLen); currentLineLen = word.length; }
+      });
+      if (currentLineLen > 0) { lineCount++; maxLen = Math.max(maxLen, currentLineLen); }
+    });
+    return { lines: Math.max(1, lineCount), maxLen: Math.max(1, Math.min(maxLen, maxChars)) };
+  }
+
+  function openAR(payload) {
+    currentPayload = payload; replyAllowed = payload && payload.from && payload.from !== myName;
+    $('#screen-chat').hidden = true;
+    const wrapper = $('#scene-wrapper'); wrapper.style.visibility = 'visible'; wrapper.style.zIndex = '100';
+    $('#ar-ui-container').hidden = false;
+    $('#dragon-entity').setAttribute('visible', 'false'); $('#dragon-bubble').setAttribute('visible', 'false');
+    $('#arMessageAudio').pause(); window.speechSynthesis.cancel(); 
+    $('#btnPlace').hidden = true; $('#btnReply').hidden = true; $('#btnBack').hidden = true;
+    $('#arHint').hidden = false; $('#arHint').textContent = i18n[lang].arHintLoad;
+
+    const scene = document.querySelector('a-scene');
+    if (scene.hasLoaded) { scene.enterAR(); } else { scene.addEventListener('loaded', () => scene.enterAR()); }
+  }
+
+  $('#btnPlace').onclick = () => {
+    const reticle = document.getElementById('reticle'); 
+    const dragon = document.getElementById('dragon-entity'); 
+    const bubble = document.getElementById('dragon-bubble'); 
+    const textEl = document.getElementById('dragon-text');
+    
+    if (reticle.getAttribute('visible')) {
+      dragon.setAttribute('position', reticle.getAttribute('position')); 
+      dragon.setAttribute('visible', 'true'); 
+      reticle.setAttribute('visible', 'false');
+      $('#btnPlace').hidden = true; 
+      $('#arHint').hidden = true; 
+
+      // PLAY SOUND
+      const sfx = document.getElementById('spawnSound');
+      if(sfx) { 
+        sfx.currentTime = 0; 
+        sfx.play().catch(e => console.log('Autoplay audio diblokir:', e)); 
+      }
+
+      // ANIMASI MAGIC BURST
+      const burst = document.getElementById('magic-burst');
+      const mRing = document.getElementById('magic-ring');
+      const mSphere = document.getElementById('magic-sphere');
+      
+      if (burst && mRing && mSphere) {
+        burst.setAttribute('visible', 'true');
+        
+        mRing.removeAttribute('animation__scale');
+        mRing.removeAttribute('animation__fade');
+        mRing.setAttribute('animation__scale', {property: 'scale', from: '1 1 1', to: '12 12 12', dur: 800, easing: 'easeOutQuad'});
+        mRing.setAttribute('animation__fade', {property: 'material.opacity', from: 1, to: 0, dur: 800, easing: 'easeOutQuad'});
+        
+        mSphere.removeAttribute('animation__scale');
+        mSphere.removeAttribute('animation__fade');
+        mSphere.setAttribute('animation__scale', {property: 'scale', from: '1 1 1', to: '6 6 6', dur: 600, easing: 'easeOutCubic'});
+        mSphere.setAttribute('animation__fade', {property: 'material.opacity', from: 0.8, to: 0, dur: 600, easing: 'easeOutCubic'});
+        
+        setTimeout(() => burst.setAttribute('visible', 'false'), 900);
+      }
+
+      if (currentPayload) {
+        const textStr = currentPayload.text || ""; textEl.setAttribute('text', 'value', textStr);
+        const maxWrap = 26; const baseWidth = 0.85; const { lines, maxLen } = calculateWrappedLines(textStr, maxWrap);
+        const charWidth = baseWidth / maxWrap; const lineHeight = 0.055; const r = 0.04; 
+        const paddingX = 0.12; const paddingY = 0.08;
+        const dynWidth = Math.max(0.2, (maxLen * charWidth) + paddingX); const dynHeight = Math.max(0.1, (lines * lineHeight) + paddingY);
+        
+        document.getElementById('bg-main').setAttribute('width', dynWidth); document.getElementById('bg-main').setAttribute('height', dynHeight - (2 * r));
+        document.getElementById('bg-cross').setAttribute('width', dynWidth - (2 * r)); document.getElementById('bg-cross').setAttribute('height', dynHeight);
+        
+        const offsetX = (dynWidth / 2) - r; const offsetY = (dynHeight / 2) - r;
+        document.getElementById('bg-tl').setAttribute('position', `${-offsetX} ${offsetY} 0`); document.getElementById('bg-tr').setAttribute('position', `${offsetX} ${offsetY} 0`);
+        document.getElementById('bg-bl').setAttribute('position', `${-offsetX} ${-offsetY} 0`); document.getElementById('bg-br').setAttribute('position', `${offsetX} ${-offsetY} 0`);
+        document.getElementById('bg-tail').setAttribute('position', `0 ${-dynHeight / 2} 0`);
+        
+        const dragonHeadY = 0.35; bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`); bubble.setAttribute('visible', 'true');
+        
+        if (autoDelete && currentPayload.id) {
+            db.ref('messages/' + currentPayload.id).remove();
+            deleteMsgByPayloadId(currentPayload.id);
+        }
+
+        speakAndPlay(currentPayload, () => {
+           if (replyAllowed) {
+               $('#btnReply').hidden = false;
+           }
+           $('#btnBack').hidden = false; 
+        });
+      }
+    }
+  };
+
+  const closeAR = (replyTarget = null) => { 
+    window.speechSynthesis.cancel(); $('#arMessageAudio').pause();
+    const scene = document.querySelector('a-scene'); if (scene && scene.is('ar-mode')) { try { scene.exitVR(); } catch(e) {} }
+    if (replyTarget) sessionStorage.setItem('sar_replyTo', replyTarget);
+    window.location.replace(window.location.pathname); 
+  };
+
+  $('#btnBackAR').onclick = () => closeAR(); $('#btnBack').onclick = () => closeAR();
+  $('#btnReply').onclick = () => closeAR(currentPayload ? currentPayload.from : null);
+
+  /* ================= AUTO CLEANUP (TUKANG SAPU 24 JAM) ================= */
+  function cleanupOldMessages() {
+    const dbRef = db.ref('messages');
+    const now = Date.now();
+    const cutoff = now - (24 * 60 * 60 * 1000); 
+
+    dbRef.orderByChild('t').endAt(cutoff).once('value')
+      .then(snapshot => {
+        snapshot.forEach(childSnapshot => {
+          childSnapshot.ref.remove();
+          console.log("Pesan kadaluarsa dihapus otomatis.");
+        });
+      })
+      .catch(e => console.log("Gagal membersihkan data:", e));
+  }
+
+  /* ================= BOOTING ================= */
+  applyLang();
+  cleanupOldMessages(); 
+
+  const pendingReply = sessionStorage.getItem('sar_replyTo');
+  if (pendingReply) { setReply(pendingReply); sessionStorage.removeItem('sar_replyTo'); toast(i18n[lang].toastReply + pendingReply); }
+</script>
+</body>
+</html>
