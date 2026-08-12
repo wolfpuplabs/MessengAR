@@ -218,6 +218,8 @@
 
 <div id="toast" hidden></div>
 <audio id="arMessageAudio" hidden></audio>
+<!-- TAMBAHAN: Audio Muncul -->
+<audio id="spawnSound" src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8a73467.mp3?filename=magic-spell-8780.mp3" preload="auto" hidden></audio>
 
 <div id="ar-ui-container" hidden>
   <div class="ar-top">
@@ -245,6 +247,13 @@
     </a-entity>
     
     <a-entity id="dragon-entity" visible="false" position="0 0 0">
+      
+      <!-- TAMBAHAN: Partikel Magic Burst -->
+      <a-entity id="magic-burst" visible="false" position="0 0.1 0">
+        <a-ring id="magic-ring" color="#66fcf1" radius-inner="0.05" radius-outer="0.1" rotation="-90 0 0" material="shader: flat; transparent: true; opacity: 1"></a-ring>
+        <a-sphere id="magic-sphere" color="#ffffff" radius="0.05" material="shader: flat; transparent: true; opacity: 1"></a-sphere>
+      </a-entity>
+
       <a-entity id="dragon-mover" random-flight>
         <a-entity gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" scale="0.002 0.002 0.002" position="0 0 0" animation-mixer></a-entity>
         
@@ -326,8 +335,6 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
   
   function applyLang() {
     const t = i18n[lang];
-    
-    // Perbaikan: Tombol send sekarang menggunakan SVG murni, jadi kita hanya mengupdate atribut 'title' saja
     $('#btnSend').title = t.btnSend; 
     
     $('#lblAutoDelete').textContent = t.lblAutoDel; $('#txt').placeholder = replyTo ? t.replyLabel + replyTo + '...' : t.plcTxt;
@@ -645,10 +652,46 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
   }
 
   $('#btnPlace').onclick = () => {
-    const reticle = document.getElementById('reticle'); const dragon = document.getElementById('dragon-entity'); const bubble = document.getElementById('dragon-bubble'); const textEl = document.getElementById('dragon-text');
+    const reticle = document.getElementById('reticle'); 
+    const dragon = document.getElementById('dragon-entity'); 
+    const bubble = document.getElementById('dragon-bubble'); 
+    const textEl = document.getElementById('dragon-text');
+    
     if (reticle.getAttribute('visible')) {
-      dragon.setAttribute('position', reticle.getAttribute('position')); dragon.setAttribute('visible', 'true'); reticle.setAttribute('visible', 'false');
-      $('#btnPlace').hidden = true; $('#arHint').hidden = true; 
+      dragon.setAttribute('position', reticle.getAttribute('position')); 
+      dragon.setAttribute('visible', 'true'); 
+      reticle.setAttribute('visible', 'false');
+      $('#btnPlace').hidden = true; 
+      $('#arHint').hidden = true; 
+
+      // --- TAMBAHAN KODE: PLAY SOUND ---
+      const sfx = document.getElementById('spawnSound');
+      if(sfx) { 
+        sfx.currentTime = 0; 
+        sfx.play().catch(e => console.log('Autoplay audio diblokir:', e)); 
+      }
+
+      // --- TAMBAHAN KODE: ANIMASI PARTIKEL ---
+      const burst = document.getElementById('magic-burst');
+      const mRing = document.getElementById('magic-ring');
+      const mSphere = document.getElementById('magic-sphere');
+      
+      if (burst && mRing && mSphere) {
+        burst.setAttribute('visible', 'true');
+        
+        mRing.removeAttribute('animation__scale');
+        mRing.removeAttribute('animation__fade');
+        mRing.setAttribute('animation__scale', {property: 'scale', from: '1 1 1', to: '12 12 12', dur: 800, easing: 'easeOutQuad'});
+        mRing.setAttribute('animation__fade', {property: 'material.opacity', from: 1, to: 0, dur: 800, easing: 'easeOutQuad'});
+        
+        mSphere.removeAttribute('animation__scale');
+        mSphere.removeAttribute('animation__fade');
+        mSphere.setAttribute('animation__scale', {property: 'scale', from: '1 1 1', to: '6 6 6', dur: 600, easing: 'easeOutCubic'});
+        mSphere.setAttribute('animation__fade', {property: 'material.opacity', from: 0.8, to: 0, dur: 600, easing: 'easeOutCubic'});
+        
+        setTimeout(() => burst.setAttribute('visible', 'false'), 900);
+      }
+      // --- AKHIR TAMBAHAN KODE ---
 
       if (currentPayload) {
         const textStr = currentPayload.text || ""; textEl.setAttribute('text', 'value', textStr);
