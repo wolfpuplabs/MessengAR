@@ -251,11 +251,14 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
     
-        <a-entity id="dragon-entity" visible="false" position="0 0 0">
+         -entity" visible="false" position="0 0 0">
+          <a-entity id="dragon-entity" visible="false" position="0 0 0">
       <a-entity id="dragon-mover" random-flight>
+        
+        <!-- 1. MODEL NAGA -->
         <a-entity gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" scale="0.002 0.002 0.002" position="0 0 0" animation-mixer></a-entity>
         
-        <!-- GELEMBUNG PESAN (Miliki look-at sendiri) -->
+        <!-- 2. GELEMBUNG PESAN (Berdiri Sendiri) -->
         <a-entity id="dragon-bubble" look-at="[camera]" position="0 0.45 0" visible="false">
           <a-entity id="bubble-bg" position="0 0 -0.01">
             <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
@@ -269,8 +272,8 @@
           <a-entity id="dragon-text" text="value: ...; font: roboto; align: center; anchor: center; baseline: center; width: 0.85; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.05" position="0 0 0"></a-entity>
         </a-entity>
 
-        <!-- TOMBOL REPLY (Miliki look-at sendiri, turun 35cm dari naga) -->
-        <a-entity id="dragon-action-btn" look-at="[camera]" position="0 -0.35 0" visible="false">
+        <!-- 3. TOMBOL REPLY (Berdiri Sendiri, 10cm di bawah kaki naga) -->
+        <a-entity id="dragon-action-btn" look-at="[camera]" position="0 -0.1 0" visible="false">
           <a-plane id="btn-body" width="0.24" height="0.08" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
           <a-circle id="btn-left" radius="0.04" position="-0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
           <a-circle id="btn-right" radius="0.04" position="0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
@@ -279,6 +282,7 @@
         
       </a-entity>
     </a-entity>
+
 
 
       </a-entity>
