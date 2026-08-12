@@ -6,29 +6,37 @@
   <title>Stick-AR Courier (WebXR)</title>
 
   <!-- A-Frame Murni & Look-At Component untuk 3D Text -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
+  
+  <!-- Mesin Animasi -->
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
   <style>
     /* ============ UI/UX REDESIGN: GLASSMORPHISM & RESPONSIVE ============ */
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
-
+    
     html, body { 
       margin: 0; padding: 0; width: 100%; height: 100%; 
       font-family: system-ui, -apple-system, sans-serif; 
       background-color: #0b0c10; color: #f0f4f8; overflow: hidden; 
     }
-
+    
     .screen { position: absolute; inset: 0; width: 100%; height: 100%; display: flex; flex-direction: column; z-index: 20; background: #0b0c10; }
-
+    
     .glass-panel {
       background: rgba(22, 26, 32, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 24px;
       padding: 24px;
       text-align: center;
       box-shadow: 0 8px 32px rgba(0,0,0,0.5);
       width: 90%; max-width: 400px;
     }
-
+    
     header { 
       display: flex; align-items: center; justify-content: space-between; 
       padding: 16px 20px; background: rgba(11, 12, 16, 0.8);
@@ -37,7 +45,7 @@
       z-index: 10; flex-shrink: 0;
     }
     .logo { font-size: 24px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
+    
     .primary-btn {
       background: linear-gradient(135deg, #45a29e, #1f2833);
       color: #fff; border: none; border-radius: 16px; padding: 14px 24px;
@@ -46,7 +54,7 @@
       pointer-events: auto; flex-shrink: 0; white-space: nowrap;
     }
     .primary-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(69, 162, 158, 0.2); }
-
+    
     .iconbtn { 
       width: 44px; height: 44px; border-radius: 14px; border: 1px solid rgba(102, 252, 241, 0.2); 
       background: #1f2833; color: #66fcf1; font-size: 18px; cursor: pointer; 
@@ -54,8 +62,31 @@
       transition: all 0.2s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.2); flex-shrink: 0;
     }
     .iconbtn:active { transform: scale(0.92); background: #2f3e4f; }
-
-    /* (Garis-garis CSS lain yang tidak terpengaruh konflik dilanjutkan di sini) */
+    
+    /* CHAT BUBBLES & WRAPPERS */
+    #msgs { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 6px; }
+    
+    .msg-wrap { display: flex; align-items: flex-end; gap: 8px; width: 100%; margin-bottom: 8px; position: relative; }
+    .msg-wrap.out { justify-content: flex-end; }
+    .msg-wrap.in { justify-content: flex-start; }
+    .msg-wrap.evt { justify-content: center; align-items: center; margin-top: 10px; margin-bottom: 10px; }
+    
+    .bub { max-width: 75%; padding: 14px 18px; border-radius: 20px; font-size: 14.5px; line-height: 1.5; word-wrap: break-word; box-shadow: 0 4px 15px rgba(0,0,0,0.25); transition: transform 0.2s ease; }
+    .bub small { display: block; opacity: 0.5; font-size: 11px; margin-top: 6px; }
+    .bub audio { max-width: 100%; display: block; margin-top: 8px; height: 36px; outline: none; border-radius: 18px; }
+    
+    .out-bub { background: linear-gradient(135deg, #1f2833, #161c24); border-bottom-right-radius: 4px; border: 1px solid rgba(102, 252, 241, 0.3); }
+    .in-bub { background: #202428; border-bottom-left-radius: 4px; border: 1px solid rgba(255,255,255,0.08); }
+    
+    .bub-event { background: rgba(69, 162, 158, 0.15); border: 1px dashed #45a29e; border-radius: 999px; padding: 10px 20px; font-size: 12px; cursor: pointer; color: #66fcf1; transition: all 0.2s ease; box-shadow: 0 0 10px rgba(69, 162, 158, 0.1); }
+    .bub-event:active { transform: scale(0.95); background: rgba(69, 162, 158, 0.25); }
+    
+    /* INDIVIDUAL DELETE BUTTON */
+    .del-btn { 
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #ff6b6b; 
+      font-size: 12px; cursor: pointer; border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+      transition: all 0.2s ease; width: 28px; height: 28px; flex-shrink: 0; opacity: 0.5; margin-bottom: 6px;
+    }
     .del-btn:hover, .del-btn:active { opacity: 1; background: rgba(255, 107, 107, 0.2); border-color: #ff6b6b; transform: scale(1.1); }
     .evt .del-btn { margin-bottom: 0; }
 
@@ -63,103 +94,546 @@
     .composer-inputs { display: flex; gap: 10px; width: 100%; align-items: center; }
     #txt { flex: 1; min-width: 0; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 14px 18px; background: #1f2833; color: #fff; font-size: 15px; outline: none; transition: all 0.3s ease; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2); }
     #txt:focus { border-color: #45a29e; box-shadow: inset 0 2px 5px rgba(0,0,0,0.2), 0 0 8px rgba(69, 162, 158, 0.3); }
-
+    
     #replyBanner { padding: 10px 16px; background: linear-gradient(90deg, #2f6f5f, #1f2833); font-size: 13px; display: flex; justify-content: space-between; align-items: center; border-radius: 12px; color: #fff; border: 1px solid rgba(102, 252, 241, 0.3); box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    
+    .mic-on { background: #e33 !important; color: #fff !important; border-color: #ff6b6b !important; animation: pulse 1s infinite; box-shadow: 0 0 15px rgba(238, 51, 51, 0.5) !important; }
+    @keyframes pulse { 50% { transform: scale(1.08); } }
 
+    .overlay { justify-content: center; align-items: center; padding: 24px; background: rgba(11, 12, 16, 0.85); backdrop-filter: blur(8px); z-index: 30; }
+    .overlay h2 { margin: 0 0 10px 0; font-size: 22px; color: #fff; }
+    .overlay p { margin: 0 0 20px 0; color: #c5c6c7; font-size: 14.5px; line-height: 1.5; }
+    
+    #shareLink { 
+      background: #0b0c10; border: 1px solid rgba(102, 252, 241, 0.3); border-radius: 12px; 
+      padding: 14px; font-size: 13px; color: #66fcf1; word-break: break-all; margin-bottom: 20px; 
+      max-height: 100px; overflow-y: auto; box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+    }
+    
+    .row { display: flex; gap: 12px; justify-content: center; }
+    
+    /* AR DOM OVERLAY UI */
+    #ar-ui-container { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; z-index: 99; }
+    .ar-top { display: flex; justify-content: space-between; pointer-events: auto; }
     #arHint { text-align: center; color: #fff; font-weight: 700; font-size: 16px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px; align-self: center; margin-top: 20px; pointer-events: none; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1); }
     #arBtns { display: flex; justify-content: center; gap: 12px; pointer-events: auto; margin-bottom: 30px; }
-
+    
     #toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: rgba(11, 12, 16, 0.95); border: 1px solid #45a29e; border-radius: 999px; padding: 12px 24px; font-size: 14px; z-index: 100; color: #66fcf1; box-shadow: 0 4px 20px rgba(0,0,0,0.5); font-weight: 600; white-space: nowrap;}
   </style>
 </head>
 <body>
 
-  <!-- Wrapper UI yang selalu menghadap Kamera -->
-  <a-entity look-at="[camera]">
+<!-- CHAT SCREEN -->
+<div id="screen-chat" class="screen">
+  <header>
+    <button id="btnClear" class="iconbtn" style="font-size: 16px;" title="Bersihkan Obrolan">🗑️</button>
+    <h1 class="logo">Stick-AR</h1>
+    <div style="display: flex; gap: 8px;">
+      <button id="btnLang" class="iconbtn" style="font-size: 13px; font-weight: bold; width: 36px; height: 36px;" title="Ganti Bahasa">ID</button>
+      <button id="btnName" class="iconbtn" style="width: 36px; height: 36px;" title="Ganti Nama">✎</button>
+    </div>
+  </header>
+  <div id="msgs"></div>
+  
+  <div class="composer">
+    <div id="replyBanner" hidden>
+      <span id="replyLabel"></span>
+      <button class="iconbtn" style="width:28px;height:28px;font-size:12px;border:none;" id="btnCancelReply">✕</button>
+    </div>
+    
+    <div class="composer-inputs">
+      <button id="btnMic" class="iconbtn" title="Rekam Suara">🎤</button>
+      <input id="txt" placeholder="Ketik pesan..." autocomplete="off">
+      <button id="btnSend" class="primary-btn">Kirim</button>
+    </div>
+  </div>
+</div>
 
-    <!-- BALON TEKS ROUNDED BOX -->
-    <a-entity 
-      id="dragon-bubble"
-      position="0 0.45 0"
-      visible="false">
+<!-- SHARE MODAL -->
+<div id="screen-share" class="screen overlay" hidden>
+  <div class="glass-panel">
+    <h2 id="shareTitleUI">Pesan Siap Terbang! ✨</h2>
+    <p id="shareDescUI">Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.</p>
+    <div id="shareLink"></div>
+    <div class="row">
+      <button id="btnShare" class="primary-btn">Share</button>
+      <button id="btnCopy" class="primary-btn">Copy</button>
+      <button id="btnShareBack" class="iconbtn" style="border:none;">✕</button>
+    </div>
+  </div>
+</div>
 
-      <!-- Background Balon Speech Bubble -->
-      <a-entity id="bubble-bg" position="0 0 -0.01">
-        <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
-        <a-plane id="bg-cross" width="0.72" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
+<!-- INCOMING MODAL -->
+<div id="screen-incoming" class="screen overlay" hidden>
+  <div class="glass-panel">
+    <h2 id="incTitleUI">Courier Tiba!</h2>
+    <p id="incFrom"></p>
+    <button id="btnAccept" class="primary-btn">Buka di AR 👁️</button>
+    <button id="btnIncLater" class="iconbtn" style="margin-top: 12px; width: 100%; border:none;">Tutup</button>
+  </div>
+</div>
+
+<!-- NAME MODAL -->
+<div id="nameModal" class="screen overlay" hidden>
+  <div class="glass-panel">
+    <h2 id="nameTitleUI">Selamat Datang</h2>
+    <p id="nameDescUI">Masukkan nama kamu sebagai pengirim:</p>
+    <input id="nameInput" maxlength="16" placeholder="Nama..." style="width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #45a29e; background: #0b0c10; color: #fff; margin-bottom: 20px; font-size: 16px; text-align: center; outline: none; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);">
+    <button id="btnNameSave" class="primary-btn" style="width: 100%;">Mulai ✨</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" hidden></div>
+
+<!-- AUDIO UTILITY (Hidden) -->
+<audio id="arMessageAudio" hidden></audio>
+
+<!-- WEBXR DOM OVERLAY UI -->
+<div id="ar-ui-container" hidden>
+  <div class="ar-top">
+    <button id="btnBackAR" class="iconbtn">‹</button>
+    <h1 class="logo">Stick-AR</h1>
+    <span style="width:44px"></span>
+  </div>
+
+  <div id="arHint">Pindai lantai hingga cincin putih muncul.</div>
+  
+  <div id="arBtns">
+    <button id="btnPlace" class="primary-btn" hidden>Tampilkan Pesan</button>
+    <button id="btnReply" class="primary-btn" hidden>Balas Pesan</button>
+    <button id="btnBack" class="primary-btn" hidden>Kembali</button>
+  </div>
+</div>
+
+<!-- A-FRAME SCENE -->
+<div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
+  <a-scene 
+    webxr="optionalFeatures: hit-test"
+    renderer="colorManagement: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+    transparent="true">
+    
+    <a-camera id="camera" position="0 1.6 0"></a-camera>
+    
+    <a-light type="directional" intensity="0.8" position="1 2 1"></a-light>
+    <a-light type="ambient" intensity="0.6"></a-light>
+
+    <a-entity id="xr-manager" webxr-hit-test></a-entity>
+
+    <a-entity id="reticle" visible="false">
+      <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
+    </a-entity>
+
+    <!-- Pembungkus Utama (Titik tengah berada di permukaan lantai) -->
+    <a-entity id="dragon-entity" visible="false" position="0 0 0">
+        
+      <!-- Wrapper Khusus Efek Melayang Naik-Turun -->
+      <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.28 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
+        
+        <!-- 3D Model Naga -->
+        <a-entity 
+          gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
+          scale="0.002 0.002 0.002" 
+          position="0 0 0"
+          animation-mixer>
+        </a-entity>
+        
+        <!-- Wrapper UI yang selalu menghadap Kamera -->
+        <a-entity look-at="[camera]">
+          
+          <!-- BALON TEKS ROUNDED BOX -->
+          <a-entity 
+            id="dragon-bubble"
+            position="0 0.45 0"
+            visible="false">
+            
+            <!-- Background Balon Speech Bubble -->
+            <a-entity id="bubble-bg" position="0 0 -0.01">
+              <a-plane id="bg-main" width="0.8" height="0.12" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
+              <a-plane id="bg-cross" width="0.72" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8"></a-plane>
+              <a-circle id="bg-tl" radius="0.04" position="-0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <a-circle id="bg-tr" radius="0.04" position="0.36 0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <a-circle id="bg-bl" radius="0.04" position="-0.36 -0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <a-circle id="bg-br" radius="0.04" position="0.36 -0.06 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8; segments: 16"></a-circle>
+              <!-- Ekor Balon Obrolan -->
+              <a-triangle id="bg-tail" vertex-a="0 -0.04 0" vertex-b="-0.05 0.02 0" vertex-c="0.05 0.02 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.8" position="0 -0.1 0"></a-triangle>
+            </a-entity>
+
+            <!-- Teks -->
+            <a-entity 
+              id="dragon-text" 
+              text="value: ...; font: roboto; align: center; anchor: center; baseline: center; width: 0.85; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.05" 
+              position="0 0 0">
+            </a-entity>
+          </a-entity>
+          
+          <!-- TOMBOL REPLY -->
+          <a-entity id="dragon-action-btn" position="0 -0.15 0" visible="false">
+            <a-plane id="btn-body" width="0.24" height="0.08" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
+            <a-circle id="btn-left" radius="0.04" position="-0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <a-circle id="btn-right" radius="0.04" position="0.12 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+            <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; anchor: center; baseline: center; width: 0.5; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
+          </a-entity>
+
+        </a-entity>
+
       </a-entity>
     </a-entity>
-  </a-entity>
+  </a-scene>
+</div>
 
 <script>
-  // ... (Bagian JavaScript sebelumnya)
+  /* ================= UTIL & STORAGE ================= */
+  const $ = s => document.querySelector(s);
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const enc = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+  const dec = s => JSON.parse(decodeURIComponent(escape(atob(s))));
+  const baseLink = () => location.href.split('#')[0];
+  function toast(t, ms = 2500) { const e = $('#toast'); e.textContent = t; e.hidden = false; clearTimeout(e._t); e._t = setTimeout(() => e.hidden = true, ms); }
 
-  const box = $('#msgs'); box.innerHTML = '';
+  const store = {
+    get(k, d) { try { return localStorage.getItem(k) || d; } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch {} }
+  };
 
-  msgs.forEach((m, i) => {
-    // PERBAIKAN LOGIKA: Pastikan Event Bubble selalu mendapat class 'evt' dan diletakkan di tengah
-    let alignClass = m.kind === 'event' ? 'evt' : (m.dir === 'out' ? 'out' : 'in');
-    const wrap = document.createElement('div');
-    wrap.className = 'msg-wrap ' + alignClass;
-
-    const d = document.createElement('div');
-    if (m.kind === 'event') {
-      d.className = 'event-bubble';
-      d.innerHTML = '✨ ' + m.text;
-    } else {
-      d.className = 'msg ' + (m.dir === 'out' ? 'out' : 'in');
-      let html = m.text.replace(/\n/g, '<br/>');
-      if (m.reply) {
-        html = `<div class="reply-ref">${m.reply}</div>` + html;
-      }
-      d.innerHTML = html;
+  /* ================= I18N (LANGUAGE) ================= */
+  const i18n = {
+    id: {
+      btnSend: "Kirim",
+      plcTxt: "Ketik pesan...",
+      replyLabel: "Membalas ke ",
+      titleShare: "Pesan Siap Terbang! ✨",
+      descShare: "Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.",
+      btnShare: "Bagikan",
+      btnCopy: "Salin",
+      titleInc: "Kurir Tiba!",
+      btnAccept: "Buka di AR 👁️",
+      btnIncLater: "Tutup",
+      titleName: "Selamat Datang",
+      descName: "Masukkan nama kamu sebagai pengirim:",
+      plcName: "Nama...",
+      btnNameSave: "Mulai ✨",
+      arHintScan: "Pindai lantai hingga cincin putih muncul.",
+      arHintFound: "Lantai ditemukan! Sentuh layar untuk memunculkan pesan.",
+      arHintSearch: "Mencari lantai/meja...",
+      arHintLoad: "Memuat AR...",
+      btnPlace: "Tampilkan Pesan",
+      btnReply: "Balas Pesan",
+      btnBack: "Kembali",
+      toastName: "Halo, ",
+      toastClear: "Obrolan dibersihkan 🧹",
+      toastMicErr: "Mic tidak didukung",
+      toastMicAtt: "🎤 Suara terlampir",
+      toastMicRec: "Merekam... tap 🎤 untuk stop",
+      toastMicDeny: "Mic tidak diizinkan",
+      toastEmpty: "Ketik pesan atau rekam suara dulu",
+      toastCopy: "Link tersalin!",
+      toastReply: "Membalas pesan ke ",
+      msgSent: "Pesan dikirim",
+      msgArr: "Pesan tiba dari ",
+      shareTitle: "Stick-AR",
+      shareText: "Ada pesan AR untukmu!",
+      incFrom: "Pesan rahasia dari ",
+      confirmClear: "Yakin ingin menghapus semua pesan?",
+      confirmDelMsg: "Hapus pesan ini?",
+      genLink: "Membuat link pendek... ⏳"
+    },
+    en: {
+      btnSend: "Send",
+      plcTxt: "Type a message...",
+      replyLabel: "Replying to ",
+      titleShare: "Message Ready! ✨",
+      descShare: "Share this link with the recipient. When opened, the courier will appear in AR.",
+      btnShare: "Share",
+      btnCopy: "Copy",
+      titleInc: "Courier Arrived!",
+      btnAccept: "Open in AR 👁️",
+      btnIncLater: "Close",
+      titleName: "Welcome",
+      descName: "Enter your name as the sender:",
+      plcName: "Name...",
+      btnNameSave: "Start ✨",
+      arHintScan: "Scan the floor until a white ring appears.",
+      arHintFound: "Floor found! Tap the screen to spawn the message.",
+      arHintSearch: "Searching for floor/table...",
+      arHintLoad: "Loading AR...",
+      btnPlace: "Show Message",
+      btnReply: "Reply Message",
+      btnBack: "Back",
+      toastName: "Hello, ",
+      toastClear: "Chat cleared 🧹",
+      toastMicErr: "Mic not supported",
+      toastMicAtt: "🎤 Voice attached",
+      toastMicRec: "Recording... tap 🎤 to stop",
+      toastMicDeny: "Mic access denied",
+      toastEmpty: "Type a message or record voice first",
+      toastCopy: "Link copied!",
+      toastReply: "Replying to ",
+      msgSent: "Message sent",
+      msgArr: "Message arrived from ",
+      shareTitle: "Stick-AR",
+      shareText: "There's an AR message for you!",
+      incFrom: "Secret message from ",
+      confirmClear: "Are you sure you want to clear the chat?",
+      confirmDelMsg: "Delete this message?",
+      genLink: "Generating short link... ⏳"
     }
+  };
 
-    // Tombol Hapus per pesan individu
-    const delBtn = document.createElement('button');
-    delBtn.className = 'del-btn';
-    delBtn.innerHTML = '🗑️';
-    delBtn.onclick = () => {
-      if(confirm(i18n[lang].toastDelConfirm)) {
-        msgs.splice(i, 1);
-        saveMsgs();
-        renderMsgs();
-      }
-    };
-
-    // Urutan susunan berdasarkan posisi (kanan = out, kiri = in)
-    if (m.dir === 'out' && m.kind !== 'event') {
-      wrap.appendChild(delBtn);
-      wrap.appendChild(d);
-    } else if (m.kind === 'event' && m.dir !== 'out') {
-      wrap.appendChild(d);
-      wrap.appendChild(delBtn);
-    } else {
-      wrap.appendChild(d);
-      wrap.appendChild(delBtn);
+  let lang = store.get('sar_lang', 'id');
+  
+  function applyLang() {
+    const t = i18n[lang];
+    $('#btnSend').textContent = t.btnSend;
+    $('#txt').placeholder = replyTo ? t.replyLabel + replyTo + '...' : t.plcTxt;
+    if(replyTo) $('#replyLabel').textContent = t.replyLabel + replyTo;
+    $('#shareTitleUI').textContent = t.titleShare;
+    $('#shareDescUI').textContent = t.descShare;
+    $('#btnShare').textContent = t.btnShare;
+    $('#btnCopy').textContent = t.btnCopy;
+    $('#incTitleUI').textContent = t.titleInc;
+    if(currentPayload) $('#incFrom').textContent = t.incFrom + currentPayload.from;
+    $('#btnAccept').textContent = t.btnAccept;
+    $('#btnIncLater').textContent = t.btnIncLater;
+    $('#nameTitleUI').textContent = t.titleName;
+    $('#nameDescUI').textContent = t.descName;
+    $('#nameInput').placeholder = t.plcName;
+    $('#btnNameSave').textContent = t.btnNameSave;
+    $('#btnPlace').textContent = t.btnPlace;
+    $('#btnReply').textContent = t.btnReply;
+    $('#btnBack').textContent = t.btnBack;
+    $('#btnLang').textContent = lang.toUpperCase();
+    
+    const arHintEl = $('#arHint');
+    if (arHintEl.textContent === i18n[lang === 'id' ? 'en' : 'id'].arHintSearch) {
+      arHintEl.textContent = t.arHintSearch;
+    } else if (arHintEl.textContent === i18n[lang === 'id' ? 'en' : 'id'].arHintScan) {
+      arHintEl.textContent = t.arHintScan;
     }
+    
+    renderMsgs();
+  }
 
-    box.appendChild(wrap);
+  $('#btnLang').onclick = () => {
+    lang = lang === 'id' ? 'en' : 'id';
+    store.set('sar_lang', lang);
+    applyLang();
+  };
+
+  /* ================= STATE ================= */
+  let myName = store.get('sar_name', '');
+  let msgs = JSON.parse(store.get('sar_msgs', '[]'));
+  let currentPayload = null;
+  let pendingAudio = null;
+  let lastShare = '';
+  let replyTo = null;
+  let replyAllowed = false;
+
+  /* ================= UI LOGIC ================= */
+  function saveName() {
+    const t = i18n[lang];
+    const v = ($('#nameInput').value || '').trim() || 'Anon';
+    $('#nameModal').hidden = true;
+    myName = v; store.set('sar_name', v);
+    toast(t.toastName + v + '!');
+  }
+  $('#btnNameSave').onclick = saveName;
+  $('#btnName').onclick = () => { $('#nameInput').value = myName; $('#nameModal').hidden = false; };
+  if (!myName) $('#nameModal').hidden = false;
+
+  $('#btnClear').onclick = () => {
+    const t = i18n[lang];
+    if (confirm(t.confirmClear)) {
+      msgs = [];
+      store.set('sar_msgs', '[]');
+      renderMsgs();
+      toast(t.toastClear);
+    }
+  };
+
+  function renderMsgs() {
+    const t = i18n[lang];
+    const box = $('#msgs'); box.innerHTML = '';
+    
+    msgs.forEach((m, i) => {
+      // PERBAIKAN LOGIKA: Pastikan Event Bubble selalu mendapat class 'evt' dan diletakkan di tengah
+      let alignClass = m.kind === 'event' ? 'evt' : (m.dir === 'out' ? 'out' : 'in');
+      const wrap = document.createElement('div');
+      wrap.className = 'msg-wrap ' + alignClass;
+
+      const d = document.createElement('div');
+      if (m.kind === 'event') {
+        d.className = 'bub-event'; 
+        d.dataset.i = i;
+        const pObj = Array.isArray(m.payload) ? { from: m.payload[2], to: m.payload[3] } : m.payload;
+        const actionTxt = m.dir === 'out' 
+          ? t.msgSent + (pObj.to ? (lang === 'id' ? ' ke ' : ' to ') + pObj.to : '') 
+          : t.msgArr + pObj.from;
+        d.textContent = actionTxt + ' — Tap';
+      } else {
+        d.className = 'bub ' + (m.dir === 'out' ? 'out-bub' : 'in-bub');
+        let html = '<b>' + (m.dir === 'out' ? myName : m.from) + '</b><br>' + m.text;
+        if (m.payload && m.payload.audio) {
+            html += '<audio controls src="' + m.payload.audio + '"></audio>';
+        }
+        html += '<small>' + new Date(m.t).toLocaleTimeString() + '</small>';
+        d.innerHTML = html;
+      }
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'del-btn';
+      delBtn.innerHTML = '🗑️';
+      delBtn.title = "Delete";
+      delBtn.onclick = (e) => {
+        e.stopPropagation();
+        if(confirm(t.confirmDelMsg)) {
+          msgs.splice(i, 1);
+          store.set('sar_msgs', JSON.stringify(msgs));
+          renderMsgs();
+        }
+      };
+
+      if (m.dir === 'out' && m.kind !== 'event') {
+        wrap.appendChild(delBtn);
+        wrap.appendChild(d);
+      } else {
+        wrap.appendChild(d);
+        wrap.appendChild(delBtn);
+      }
+
+      box.appendChild(wrap);
+    });
+    box.scrollTop = box.scrollHeight;
+  }
+
+  $('#msgs').addEventListener('click', e => {
+    const el = e.target.closest('.bub-event');
+    if (!el) return;
+    const m = msgs[el.dataset.i];
+    if (m && m.payload) {
+      const p = Array.isArray(m.payload) 
+        ? { v: m.payload[0], id: m.payload[1], from: m.payload[2], to: m.payload[3], text: m.payload[4], audio: m.payload[5], t: m.payload[6] } 
+        : m.payload;
+      openAR(p);
+    }
   });
 
-  // ...
+  /* ================= REPLY LOGIC ================= */
+  function setReply(name) {
+    const t = i18n[lang];
+    replyTo = name;
+    $('#replyBanner').hidden = !name;
+    if (name) {
+      $('#replyLabel').textContent = t.replyLabel + name;
+      $('#txt').placeholder = t.replyLabel + name + '...';
+    } else {
+      $('#txt').placeholder = t.plcTxt;
+    }
+  }
+  $('#btnCancelReply').onclick = () => setReply(null);
+
+  /* ================= AUDIO RECORDING ================= */
+  let mRec = null;
+  $('#btnMic').onclick = () => {
+    const t = i18n[lang];
+    if (mRec) { mRec.stop(); return; }
+    if (!navigator.mediaDevices) { toast(t.toastMicErr); return; }
+    
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(st => {
+      mRec = new MediaRecorder(st, { audioBitsPerSecond: 20000 }); 
+      const ch = [];
+      mRec.ondataavailable = e => ch.push(e.data);
+      mRec.onstop = () => {
+        st.getTracks().forEach(track => track.stop());
+        const r = new FileReader();
+        r.onload = () => { pendingAudio = r.result; toast(t.toastMicAtt); };
+        r.readAsDataURL(new Blob(ch, { type: mRec.mimeType }));
+        mRec = null; 
+        $('#btnMic').classList.remove('mic-on');
+      };
+      mRec.start(); 
+      $('#btnMic').classList.add('mic-on'); 
+      toast(t.toastMicRec);
+      setTimeout(() => { if (mRec) mRec.stop() }, 10000);
+    }).catch(() => toast(t.toastMicDeny));
+  };
 
   /* ================= SEND LOGIC ================= */
   $('#btnSend').onclick = async () => {
     const t = i18n[lang];
     const text = $('#txt').value.trim();
-    // ...
+    if (!text && !pendingAudio) return toast(t.toastEmpty);
+    
+    const payloadObj = { v: 1, id: uid(), from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
+    const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
+    
+    msgs.push({ kind: 'event', dir: 'out', payload: compactPayload, t: Date.now() });
+    store.set('sar_msgs', JSON.stringify(msgs));
+    renderMsgs();
+    
+    const longLink = baseLink() + '#m=' + enc(compactPayload);
+    lastShare = longLink; 
+    
+    $('#shareLink').textContent = t.genLink;
+    $('#screen-share').hidden = false;
+    $('#txt').value = '';
+    pendingAudio = null;
+    $('#btnMic').classList.remove('mic-on');
+    setReply(null); 
+    
     try {
-      // Logic membuat link
-      if (shortUrl) {
+      const response = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(longLink));
+      if (response.ok) {
+        const shortUrl = await response.text();
         lastShare = shortUrl;
       }
     } catch (err) {
       console.warn("Gagal membuat link pendek.", err);
     }
-
+    
     $('#shareLink').textContent = lastShare;
-    // ...
+  };
+
+  $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
+  $('#btnCopy').onclick = () => { navigator.clipboard.writeText(lastShare).then(() => toast(i18n[lang].toastCopy)); };
+  $('#btnShare').onclick = async () => {
+    const t = i18n[lang];
+    try { await navigator.share({ title: t.shareTitle, text: t.shareText, url: lastShare }); } 
+    catch(e) { $('#btnCopy').click(); }
+  };
+
+  /* ================= INCOMING LOGIC ================= */
+  function handlePayload(p) {
+    const parsed = Array.isArray(p) 
+      ? { v: p[0], id: p[1], from: p[2], to: p[3], text: p[4], audio: p[5], t: p[6] } 
+      : p;
+      
+    currentPayload = parsed;
+    $('#incFrom').textContent = i18n[lang].incFrom + parsed.from;
+    $('#screen-incoming').hidden = false;
+  }
+  
+  window.addEventListener('hashchange', () => {
+    const m = location.hash.match(/m=(.+)/);
+    if (m) { try { handlePayload(dec(m[1])); } catch(e){} }
+  });
+
+  $('#btnIncLater').onclick = () => $('#screen-incoming').hidden = true;
+  
+  $('#btnAccept').onclick = () => {
+    $('#screen-incoming').hidden = true;
+    if (currentPayload && currentPayload.from !== myName && !msgs.some(m => {
+      const pid = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
+      return pid === currentPayload.id;
+    })) {
+      const compactPayload = [1, currentPayload.id, currentPayload.from, currentPayload.to, currentPayload.text, currentPayload.audio, currentPayload.t];
+      msgs.push({ kind: 'event', dir: 'in', payload: compactPayload, t: Date.now() });
+      store.set('sar_msgs', JSON.stringify(msgs));
+      renderMsgs();
+    }
+    openAR(currentPayload);
   };
 
   /* ================= TTS & AUDIO PLAYBACK ================= */
@@ -167,82 +641,303 @@
   function populateVoices() {
     availableVoices = window.speechSynthesis.getVoices();
   }
-  // ...
+  if (speechSynthesis.onvoiceschanged !== undefined) {
+    speechSynthesis.onvoiceschanged = populateVoices;
+  }
 
-  function openAR(currentPayload) {
-    const textEl = document.getElementById('arMessageText');
-    const bubble = document.getElementById('dragon-bubble');
-
-    if (textEl && bubble) {
-      const textStr = currentPayload.text || "";
-      textEl.setAttribute('text', 'value', textStr);
-
-      const maxWrap = 26; 
-      const baseWidth = 0.85; 
-      const { lines, maxLen } = calculateWrappedLines(textStr, maxWrap);
-      // ... perhitungan dimensi ...
-
-      const dynHeight = 0.5; // (Contoh variabel hasil perhitungan)
-      const dragonHeadY = 0.35; 
-      bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`);
-
-      bubble.setAttribute('visible', 'true');
-
-      speakAndPlay(currentPayload, () => {
-         const actionBtn = document.getElementById('dragon-action-btn');
-         const btnBody = document.getElementById('btn-body');
-         const btnLeft = document.getElementById('btn-left');
-         const btnRight = document.getElementById('btn-right');
-         const btnText = document.getElementById('btn-text');
-
-         if (replyAllowed) {
-           btnText.setAttribute('text', 'value', 'REPLY');
-           btnBody.setAttribute('color', '#45a29e');
-           btnLeft.setAttribute('color', '#45a29e');
-           btnRight.setAttribute('color', '#45a29e');
-         } else {
-           btnText.setAttribute('text', 'value', 'REPLY'); 
-           btnBody.setAttribute('color', '#1f2833'); 
-           btnLeft.setAttribute('color', '#1f2833');
-           btnRight.setAttribute('color', '#1f2833');
-         }
-         actionBtn.setAttribute('visible', 'true');
-
-         if (replyAllowed) $('#btnReply').hidden = false;
-         else $('#btnBack').hidden = false; 
-      });
+  function speakAndPlay(payload, onFinish) {
+    const audioEl = $('#arMessageAudio');
+    if (payload.audio) {
+      audioEl.src = payload.audio;
+      audioEl.play().catch(() => toast('Audio diblokir perangkat'));
+      audioEl.onended = onFinish;
+    } else if ('speechSynthesis' in window) {
+      const u = new SpeechSynthesisUtterance(payload.text);
+      const targetLang = (lang === 'id') ? 'id-ID' : 'en-US';
+      u.lang = targetLang; 
+      
+      u.rate = 0.95; 
+      u.pitch = 1.0;
+      
+      if (availableVoices.length === 0) populateVoices();
+      
+      const langVoices = availableVoices.filter(v => v.lang.startsWith(targetLang.substring(0, 2)));
+      let bestVoice = langVoices.find(v => 
+        v.name.includes('Premium') || 
+        v.name.includes('Enhanced') || 
+        v.name.includes('Damayanti') || 
+        v.name.includes('Google')
+      );
+      
+      if (bestVoice) {
+        u.voice = bestVoice;
+      }
+      
+      u.onend = onFinish; 
+      u.onerror = onFinish;
+      speechSynthesis.speak(u);
+    } else {
+      setTimeout(onFinish, 2000);
     }
   }
+
+  /* ================= WEBXR HIT-TEST ================= */
+  window.addEventListener('touchstart', (e) => {
+    const scene = document.querySelector('a-scene');
+    if (scene && scene.is('ar-mode')) {
+      const actionBtn = document.getElementById('dragon-action-btn');
+      if (actionBtn && actionBtn.getAttribute('visible')) {
+        if (replyAllowed) $('#btnReply').click();
+        else $('#btnBack').click();
+        return; 
+      }
+      const reticle = document.getElementById('reticle');
+      if (reticle && reticle.getAttribute('visible')) {
+        $('#btnPlace').click();
+      }
+    }
+  });
+
+  AFRAME.registerComponent('webxr-hit-test', {
+    init: function () {
+      this.xrHitTestSource = null;
+      this.viewerSpace = null;
+      this.refSpace = null;
+
+      this.el.sceneEl.renderer.xr.addEventListener('sessionstart', () => {
+        let session = this.el.sceneEl.renderer.xr.getSession();
+        
+        session.requestReferenceSpace('viewer').then((space) => {
+          this.viewerSpace = space;
+          session.requestHitTestSource({ space: this.viewerSpace }).then((hitTestSource) => {
+            this.xrHitTestSource = hitTestSource;
+          });
+        });
+
+        session.requestReferenceSpace('local-floor').then((space) => { 
+          this.refSpace = space; 
+        }).catch(() => {
+          session.requestReferenceSpace('local').then((space) => {
+            this.refSpace = space;
+          });
+        });
+      });
+
+      this.el.sceneEl.renderer.xr.addEventListener('sessionend', () => {
+        this.xrHitTestSource = null;
+      });
+    },
+    tick: function () {
+      if (this.el.sceneEl.is('ar-mode')) {
+        if (!this.viewerSpace) return;
+        
+        const dragon = document.getElementById('dragon-entity');
+        const isDragonVisible = dragon.getAttribute('visible');
+        if (isDragonVisible === true || isDragonVisible === 'true') {
+          document.getElementById('reticle').setAttribute('visible', 'false');
+          return;
+        }
+
+        let frame = this.el.sceneEl.frame;
+        let xrViewerPose = frame.getViewerPose(this.refSpace);
+
+        if (this.xrHitTestSource && xrViewerPose) {
+          let hitTestResults = frame.getHitTestResults(this.xrHitTestSource);
+          if (hitTestResults.length > 0) {
+            let pose = hitTestResults[0].getPose(this.refSpace);
+            const reticle = document.getElementById('reticle');
+            reticle.setAttribute('position', pose.transform.position);
+            reticle.setAttribute('visible', 'true');
+            
+            if ($('#dragon-entity').getAttribute('visible') === false) {
+                $('#btnPlace').hidden = false;
+                $('#arHint').textContent = i18n[lang].arHintFound;
+            }
+          } else {
+             document.getElementById('reticle').setAttribute('visible', 'false');
+             if ($('#dragon-entity').getAttribute('visible') === false) {
+                $('#btnPlace').hidden = true;
+                $('#arHint').textContent = i18n[lang].arHintSearch;
+             }
+          }
+        }
+      }
+    }
+  });
+
+  /* ================= AR LOGIC & RESPONSIVE BUBBLE ================= */
+  
+  function calculateWrappedLines(str, maxChars = 26) {
+    const paragraphs = str.split('\n');
+    let lineCount = 0;
+    let maxLen = 0;
+    
+    paragraphs.forEach(para => {
+      if (para.length === 0) { lineCount++; return; }
+      const words = para.split(' ');
+      let currentLineLen = 0;
+      
+      words.forEach(word => {
+        if (currentLineLen === 0) {
+          currentLineLen = word.length;
+        } else if (currentLineLen + 1 + word.length <= maxChars) {
+          currentLineLen += 1 + word.length;
+        } else {
+          lineCount++;
+          maxLen = Math.max(maxLen, currentLineLen);
+          currentLineLen = word.length;
+        }
+      });
+      if (currentLineLen > 0) {
+        lineCount++;
+        maxLen = Math.max(maxLen, currentLineLen);
+      }
+    });
+    
+    return { 
+      lines: Math.max(1, lineCount), 
+      maxLen: Math.max(1, Math.min(maxLen, maxChars)) 
+    };
+  }
+
+  function openAR(payload) {
+    currentPayload = payload;
+    replyAllowed = payload && payload.from && payload.from !== myName;
+    
+    $('#screen-chat').hidden = true;
+    
+    const wrapper = $('#scene-wrapper');
+    wrapper.style.visibility = 'visible';
+    wrapper.style.zIndex = '100';
+    
+    $('#ar-ui-container').hidden = false;
+    
+    $('#dragon-entity').setAttribute('visible', 'false');
+    $('#dragon-bubble').setAttribute('visible', 'false');
+    $('#dragon-action-btn').setAttribute('visible', 'false');
+    $('#arMessageAudio').pause();
+    window.speechSynthesis.cancel(); 
+    
+    $('#btnPlace').hidden = true;
+    $('#btnReply').hidden = true;
+    $('#btnBack').hidden = true;
+    $('#arHint').hidden = false;
+    $('#arHint').textContent = i18n[lang].arHintLoad;
+
+    const scene = document.querySelector('a-scene');
+    if (scene.hasLoaded) { scene.enterAR(); } 
+    else { scene.addEventListener('loaded', () => scene.enterAR()); }
+  }
+
+  $('#btnPlace').onclick = () => {
+    const reticle = document.getElementById('reticle');
+    const dragon = document.getElementById('dragon-entity');
+    const bubble = document.getElementById('dragon-bubble');
+    const textEl = document.getElementById('dragon-text');
+
+    if (reticle.getAttribute('visible')) {
+      dragon.setAttribute('position', reticle.getAttribute('position'));
+      dragon.setAttribute('visible', 'true');
+      reticle.setAttribute('visible', 'false');
+      
+      $('#btnPlace').hidden = true;
+      $('#arHint').hidden = true; 
+
+      if (currentPayload) {
+        const textStr = currentPayload.text || "";
+        textEl.setAttribute('text', 'value', textStr);
+        
+        const maxWrap = 26; 
+        const baseWidth = 0.85; 
+        const { lines, maxLen } = calculateWrappedLines(textStr, maxWrap);
+        
+        const charWidth = baseWidth / maxWrap; 
+        const lineHeight = 0.055; 
+        const r = 0.04; 
+        
+        const paddingX = 0.12; 
+        const paddingY = 0.08;
+        
+        const dynWidth = Math.max(0.2, (maxLen * charWidth) + paddingX);
+        const dynHeight = Math.max(0.1, (lines * lineHeight) + paddingY);
+        
+        document.getElementById('bg-main').setAttribute('width', dynWidth);
+        document.getElementById('bg-main').setAttribute('height', dynHeight - (2 * r));
+        
+        document.getElementById('bg-cross').setAttribute('width', dynWidth - (2 * r));
+        document.getElementById('bg-cross').setAttribute('height', dynHeight);
+        
+        const offsetX = (dynWidth / 2) - r;
+        const offsetY = (dynHeight / 2) - r;
+        
+        document.getElementById('bg-tl').setAttribute('position', `${-offsetX} ${offsetY} 0`);
+        document.getElementById('bg-tr').setAttribute('position', `${offsetX} ${offsetY} 0`);
+        document.getElementById('bg-bl').setAttribute('position', `${-offsetX} ${-offsetY} 0`);
+        document.getElementById('bg-br').setAttribute('position', `${offsetX} ${-offsetY} 0`);
+        
+        document.getElementById('bg-tail').setAttribute('position', `0 ${-dynHeight / 2} 0`);
+        
+        const dragonHeadY = 0.35; 
+        bubble.setAttribute('position', `0 ${dragonHeadY + (dynHeight / 2)} 0`);
+
+        bubble.setAttribute('visible', 'true');
+        
+        speakAndPlay(currentPayload, () => {
+           const actionBtn = document.getElementById('dragon-action-btn');
+           const btnBody = document.getElementById('btn-body');
+           const btnLeft = document.getElementById('btn-left');
+           const btnRight = document.getElementById('btn-right');
+           const btnText = document.getElementById('btn-text');
+
+           if (replyAllowed) {
+             btnText.setAttribute('text', 'value', 'REPLY');
+             btnBody.setAttribute('color', '#45a29e');
+             btnLeft.setAttribute('color', '#45a29e');
+             btnRight.setAttribute('color', '#45a29e');
+           } else {
+             btnText.setAttribute('text', 'value', 'REPLY'); 
+             btnBody.setAttribute('color', '#1f2833'); 
+             btnLeft.setAttribute('color', '#1f2833');
+             btnRight.setAttribute('color', '#1f2833');
+           }
+           actionBtn.setAttribute('visible', 'true');
+           
+           if (replyAllowed) $('#btnReply').hidden = false;
+           else $('#btnBack').hidden = false; 
+        });
+      }
+    }
+  };
 
   const closeAR = (replyTarget = null) => { 
     window.speechSynthesis.cancel();
     $('#arMessageAudio').pause();
-
+    
     const scene = document.querySelector('a-scene');
     if (scene && scene.is('ar-mode')) {
       try { scene.exitVR(); } catch(e) {}
     }
-
+    
     if (replyTarget) {
       sessionStorage.setItem('sar_replyTo', replyTarget);
     }
-
+    
     window.location.reload();
   };
 
   $('#btnBackAR').onclick = () => closeAR();
   $('#btnBack').onclick = () => closeAR();
-
+  
   $('#btnReply').onclick = () => {
     closeAR(currentPayload ? currentPayload.from : null);
   };
 
   /* ================= BOOT ================= */
   applyLang(); 
-
+  
   const initMatch = location.hash.match(/m=(.+)/);
   if (initMatch) { try { handlePayload(dec(initMatch[1])); } catch(e){} }
-
+  
   const pendingReply = sessionStorage.getItem('sar_replyTo');
   if (pendingReply) {
     setReply(pendingReply);
