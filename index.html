@@ -9,7 +9,7 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   
-  <!-- Mesin Animasi (Diperbarui ke v7.2.0 agar lebih stabil) -->
+  <!-- Mesin Animasi (Diperbarui ke v7.2.0) -->
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
 
   <style>
@@ -184,11 +184,13 @@
 </div>
 
 <!-- A-FRAME SCENE -->
+<!-- MODIFIKASI: Menambahkan device-orientation-permission-ui="enabled: false" untuk menyembunyikan pop-up Deny/Allow -->
 <div id="scene-wrapper" style="position: absolute; inset: 0; z-index: -100; visibility: hidden;">
   <a-scene 
     webxr="optionalFeatures: hit-test"
     renderer="colorManagement: true"
     vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
     transparent="true">
     
     <a-camera id="camera" position="0 1.6 0"></a-camera>
@@ -202,15 +204,13 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- Pembungkus Utama (Titik tengah berada di permukaan lantai) -->
+    <!-- Pembungkus Utama -->
     <a-entity id="dragon-entity" visible="false" position="0 0 0">
         
       <!-- Wrapper Khusus Efek Melayang Naik-Turun (Membawa Naga & Teks UI sekaligus) -->
-      <!-- Mengambang dari ketinggian 20cm ke 28cm dari lantai -->
       <a-entity animation="property: position; from: 0 0.2 0; to: 0 0.28 0; dir: alternate; dur: 1500; loop: true; easing: easeInOutSine">
         
-        <!-- 3D Model Naga -->
-        <!-- Panggilan animation-mixer dibuat kosong agar otomatis memutar semua animasi yang ada -->
+        <!-- 3D Model Naga (Animasi kepak sayap dipaksa putar semua) -->
         <a-entity 
           gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
           scale="0.002 0.002 0.002" 
@@ -218,21 +218,31 @@
           animation-mixer>
         </a-entity>
         
-        <!-- 3D Text & Tombol Melayang -->
-        <a-entity 
-          id="dragon-bubble"
-          position="0 0 0"
-          look-at="[camera]"
-          visible="false">
+        <!-- Wrapper UI yang selalu mengikuti arah pandangan Kamera -->
+        <a-entity look-at="[camera]">
           
-          <!-- Teks ditaruh di ATAS kepala naga -->
+          <!-- BALON TEKS (Ditarik ke atas kepala naga Y=0.35) -->
           <a-entity 
-            id="dragon-text" 
-            text="value: ...; font: roboto; align: center; width: 0.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
-            position="0 0.25 0">
+            id="dragon-bubble"
+            position="0 0.35 0"
+            visible="false">
+            
+            <!-- Background Balon Kapsul Hitam Transparan -->
+            <a-entity position="0 0 -0.01">
+              <a-plane width="0.8" height="0.2" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7"></a-plane>
+              <a-circle radius="0.1" position="-0.4 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7; segments: 32"></a-circle>
+              <a-circle radius="0.1" position="0.4 0 0" color="#0b0c10" material="shader: flat; transparent: true; opacity: 0.7; segments: 32"></a-circle>
+            </a-entity>
+
+            <!-- Teks -->
+            <a-entity 
+              id="dragon-text" 
+              text="value: ...; font: roboto; align: center; width: 0.85; wrapCount: 22; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.05" 
+              position="0 0 0">
+            </a-entity>
           </a-entity>
           
-          <!-- Tombol ditaruh di BAWAH kaki naga -->
+          <!-- TOMBOL REPLY (Tetap di bawah kaki naga Y=-0.15) -->
           <a-entity id="dragon-action-btn" position="0 -0.15 0" visible="false">
             <!-- Badan Kapsul -->
             <a-plane id="btn-body" width="0.24" height="0.08" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
@@ -243,7 +253,7 @@
             <!-- Teks Tombol -->
             <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 0.5; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
           </a-entity>
-          
+
         </a-entity>
 
       </a-entity>
