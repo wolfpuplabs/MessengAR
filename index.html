@@ -202,40 +202,43 @@
       <a-ring color="#66fcf1" radius-inner="0.1" radius-outer="0.15" rotation="-90 0 0"></a-ring>
     </a-entity>
 
-    <!-- 3D Model: Menggunakan Tautan Absolut dan Skala Diperkecil -->
-    <a-entity 
-      id="dragon-entity" 
-      gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
-      scale="0.02 0.02 0.02" 
-      visible="false"
-      animation-mixer="clip: *">
+    <!-- Pembungkus Utama (Memisahkan skala Naga dan UI agar tidak bertabrakan) -->
+    <a-entity id="dragon-entity" visible="false">
+        
+      <!-- 3D Model Naga (Kamu bisa mengubah angka 0.002 ini untuk mengatur ukuran naganya saja!) -->
+      <a-entity 
+        gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" 
+        scale="0.002 0.002 0.002" 
+        animation-mixer="clip: *">
+      </a-entity>
       
-      <!-- 3D Text Melayang Murni Tanpa Plane -->
+      <!-- 3D Text & Tombol Melayang (Skala dan Posisinya sudah aman, jangan diubah) -->
       <a-entity 
         id="dragon-bubble"
-        position="0 25 0"
+        position="0 0.5 0"
         look-at="[camera]"
         visible="false">
         
         <a-entity 
           id="dragon-text" 
-          text="value: ...; font: roboto; align: center; width: 40; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
+          text="value: ...; font: roboto; align: center; width: 0.8; wrapCount: 26; color: #66fcf1; lineHeight: 55; outlineColor: #000000; outlineWidth: 0.1" 
           position="0 0 0">
         </a-entity>
         
         <!-- Tombol 3D Balas/Kembali -->
-        <a-entity id="dragon-action-btn" position="0 -12 0" visible="false">
+        <a-entity id="dragon-action-btn" position="0 -0.25 0" visible="false">
           <!-- Badan Kapsul -->
-          <a-plane id="btn-body" width="10" height="3" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
+          <a-plane id="btn-body" width="0.2" height="0.06" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9"></a-plane>
           <!-- Lengkungan Kiri -->
-          <a-circle id="btn-left" radius="1.5" position="-5 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+          <a-circle id="btn-left" radius="0.03" position="-0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
           <!-- Lengkungan Kanan -->
-          <a-circle id="btn-right" radius="1.5" position="5 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
+          <a-circle id="btn-right" radius="0.03" position="0.1 0 0" color="#45a29e" material="shader: flat; transparent: true; opacity: 0.9; segments: 32"></a-circle>
           <!-- Teks Tombol -->
-          <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 20; color: #ffffff; wrapCount: 12" position="0 0 0.1"></a-entity>
+          <a-entity id="btn-text" text="value: REPLY; font: roboto; align: center; width: 0.4; color: #ffffff; wrapCount: 12" position="0 0 0.002"></a-entity>
         </a-entity>
         
       </a-entity>
+      
     </a-entity>
   </a-scene>
 </div>
