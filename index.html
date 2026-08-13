@@ -123,8 +123,18 @@
     .glass-panel { background: rgba(22, 26, 32, 0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 24px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.5); width: 90%; max-width: 400px; }
     
     header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 20px; background: rgba(11, 12, 16, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 10; position: relative; }
-    .logo { font-size: 24px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
     
+    /* Header Logo & AI Status Badge */
+    .header-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+    .logo { font-size: 22px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
+    
+    .ai-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #c5c6c7; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px; }
+    .ai-badge.loading { color: #ffca28; border-color: rgba(255, 202, 40, 0.4); animation: pulse-border 1.5s infinite; }
+    .ai-badge.ready { color: #66fcf1; border-color: rgba(102, 252, 241, 0.4); background: rgba(102, 252, 241, 0.1); }
+    .ai-badge.fallback { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.4); }
+    
+    @keyframes pulse-border { 50% { border-color: rgba(255, 202, 40, 1); box-shadow: 0 0 8px rgba(255, 202, 40, 0.3); } }
+
     .primary-btn { background: linear-gradient(135deg, #45a29e, #1f2833); color: #fff; border: none; border-radius: 16px; padding: 14px 20px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3); pointer-events: auto; flex-shrink: 0; white-space: nowrap; }
     .primary-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(69, 162, 158, 0.2); }
     .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -194,7 +204,13 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
       </button>
     </div>
-    <h1 class="logo">MESSENG-AR</h1>
+    
+    <!-- HEADER CENTER DENGAN INDIKATOR STATUS AI -->
+    <div class="header-center">
+      <h1 class="logo">MESSENG-AR</h1>
+      <span id="aiStatusBadge" class="ai-badge loading">⏳ AI Loading...</span>
+    </div>
+
     <div style="display: flex; gap: 8px; justify-content: flex-end;">
       <button id="btnLang" class="iconbtn" style="width: 36px; height: 36px;" title="Ganti Bahasa">ID</button>
       <button id="btnName" class="iconbtn" style="width: 36px; height: 36px; font-size: 12px;" title="Ganti Nama">Edit</button>
@@ -592,7 +608,6 @@
   function populateVoices() { availableVoices = window.speechSynthesis.getVoices(); }
   if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
 
-  // SYSTEM WEB WORKER DENGAN BLOB URL (SATU FILE HTML)
   let ttsWorker = null;
   let isWorkerReady = false;
 
@@ -640,31 +655,42 @@
     };
   `;
 
+  // Update UI Status Badge Fungsi
+  function updateAIBadge(statusText, type) {
+    const badge = $('#aiStatusBadge');
+    if (!badge) return;
+    badge.textContent = statusText;
+    badge.className = 'ai-badge ' + type;
+  }
+
   try {
     const blob = new Blob([workerCode], { type: 'application/javascript' });
     const workerUrl = URL.createObjectURL(blob);
     ttsWorker = new Worker(workerUrl, { type: 'module' });
     
     ttsWorker.postMessage({ action: 'init' });
-    toast("Mempersiapkan AI di Latar Belakang...", 3000);
+    updateAIBadge("⏳ AI Loading...", "loading");
 
     ttsWorker.onmessage = (event) => {
       const data = event.data;
       if (data.status === 'ready') {
         isWorkerReady = true;
+        const modeLabel = data.mode === 'WebGPU' ? '⚡ AI Ready (WebGPU)' : '⚙️ AI Ready (WASM)';
+        updateAIBadge(modeLabel, "ready");
         toast(`AI Suara Siap! (${data.mode})`);
       } else if (data.status === 'error') {
+        updateAIBadge("🤖 Voice Robot", "fallback");
         console.error("Worker error:", data.error);
       }
     };
   } catch (e) {
+    updateAIBadge("🤖 Voice Robot", "fallback");
     console.error("Gagal inisialisasi Web Worker:", e);
   }
 
   function speakAndPlay(payload, onFinish) {
     const audioEl = $('#arMessageAudio');
 
-    // 1. Rekaman Suara Mic
     if (payload.audio) {
       audioEl.src = payload.audio;
       audioEl.play().catch(() => toast('Audio diblokir perangkat'));
@@ -672,7 +698,6 @@
       return;
     }
 
-    // 2. Web Worker (Kokoro AI)
     if (isWorkerReady && ttsWorker) {
       toast("Kurir meracik suara... (Background Thread)");
       
@@ -704,7 +729,6 @@
       return;
     }
 
-    // 3. Fallback Suara Robot
     fallbackTTS(payload.text, onFinish);
   }
 
