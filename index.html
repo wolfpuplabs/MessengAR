@@ -60,7 +60,7 @@
       }
     });
 
-    // Komponen Fire Dust Trail (Versi SUPER SLOW MO, GLOWING & DRAMATIC)
+    // Komponen Fire Dust Trail
     AFRAME.registerComponent('fire-dust', {
       init: function () {
         const colors = ['#ff4400', '#ff9900', '#ffdd00', '#ffffff', '#ffeeaa'];
@@ -85,7 +85,6 @@
 
           p.setAttribute('radius', size);
           p.setAttribute('position', `${x} ${y} ${z}`);
-          
           p.setAttribute('material', `shader: flat; color: ${color}; transparent: true; opacity: 0; blending: additive`);
 
           p.setAttribute(`animation__float`, {
@@ -116,7 +115,6 @@
   </script>
 
   <style>
-    /* UI/UX REDESIGN & TATA LETAK */
     * { box-sizing: border-box; }
     [hidden] { display: none !important; }
     body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #0b0c10; color: #f0f4f8; height: 100vh; overflow: hidden; }
@@ -323,7 +321,6 @@
 
 <script>
   /* ================= INISIALISASI FIREBASE ================= */
-  // ! PENTING: ISI CONFIG FIREBASE INI DENGAN MILIKMU SENDIRI !
   const firebaseConfig = {
     apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
     authDomain: "messeng-ar.firebaseapp.com",
@@ -590,15 +587,84 @@
     openAR(currentPayload);
   };
 
-  /* ================= TTS & AUDIO ================= */
+  /* ================= TTS & AUDIO (WEB WORKER IMPLEMENTATION) ================= */
   let availableVoices = [];
   function populateVoices() { availableVoices = window.speechSynthesis.getVoices(); }
   if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
 
-  async function speakAndPlay(payload, onFinish) {
+  // SYSTEM WEB WORKER DENGAN BLOB URL (SATU FILE HTML)
+  let ttsWorker = null;
+  let isWorkerReady = false;
+
+  const workerCode = `
+    import { KokoroTTS } from "https://esm.sh/kokoro-js";
+    let kokoroModel = null;
+
+    self.onmessage = async (event) => {
+      const { action, text, voice } = event.data;
+
+      if (action === 'init') {
+        try {
+          kokoroModel = await KokoroTTS.from_pretrained("hexgrad/Kokoro-82M", {
+            device: "webgpu",
+            dtype: "q8",
+          });
+          self.postMessage({ status: 'ready', mode: 'WebGPU' });
+        } catch (e) {
+          console.warn("Worker WebGPU gagal, mencoba WASM...");
+          try {
+            kokoroModel = await KokoroTTS.from_pretrained("hexgrad/Kokoro-82M", {
+              device: "wasm",
+              dtype: "q8",
+            });
+            self.postMessage({ status: 'ready', mode: 'WASM' });
+          } catch (err) {
+            self.postMessage({ status: 'error', error: "Perangkat tidak didukung" });
+          }
+        }
+      }
+
+      if (action === 'generate') {
+        if (!kokoroModel) {
+          self.postMessage({ status: 'error', error: "Model belum siap" });
+          return;
+        }
+
+        try {
+          const audioData = await kokoroModel.generate(text, { voice: voice, speed: 1.0 });
+          self.postMessage({ status: 'done', wavBuffer: audioData.wav });
+        } catch (err) {
+          self.postMessage({ status: 'error', error: err.message });
+        }
+      }
+    };
+  `;
+
+  try {
+    const blob = new Blob([workerCode], { type: 'application/javascript' });
+    const workerUrl = URL.createObjectURL(blob);
+    ttsWorker = new Worker(workerUrl, { type: 'module' });
+    
+    ttsWorker.postMessage({ action: 'init' });
+    toast("Mempersiapkan AI di Latar Belakang...", 3000);
+
+    ttsWorker.onmessage = (event) => {
+      const data = event.data;
+      if (data.status === 'ready') {
+        isWorkerReady = true;
+        toast(`AI Suara Siap! (${data.mode})`);
+      } else if (data.status === 'error') {
+        console.error("Worker error:", data.error);
+      }
+    };
+  } catch (e) {
+    console.error("Gagal inisialisasi Web Worker:", e);
+  }
+
+  function speakAndPlay(payload, onFinish) {
     const audioEl = $('#arMessageAudio');
 
-    // 1. Jika ada rekaman audio asli, langsung mainkan
+    // 1. Rekaman Suara Mic
     if (payload.audio) {
       audioEl.src = payload.audio;
       audioEl.play().catch(() => toast('Audio diblokir perangkat'));
@@ -606,38 +672,46 @@
       return;
     }
 
-    // 2. Gunakan Kokoro-82M murni via WebGPU
-    if (window.kokoroModel) {
-      toast("Kurir meracik suara... (WebGPU)");
+    // 2. Web Worker (Kokoro AI)
+    if (isWorkerReady && ttsWorker) {
+      toast("Kurir meracik suara... (Background Thread)");
       
-      try {
-        const audioData = await window.kokoroModel.generate(payload.text, {
-          voice: (lang === 'en') ? "af_heart" : "af_bella",
-          speed: 1.0
-        });
+      ttsWorker.postMessage({
+        action: 'generate',
+        text: payload.text,
+        voice: (lang === 'en') ? "af_heart" : "af_bella"
+      });
 
-        const blob = new Blob([audioData.wav], { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
+      const handleWorkerResponse = (event) => {
+        const data = event.data;
+        if (data.status === 'done') {
+          ttsWorker.removeEventListener('message', handleWorkerResponse);
+          
+          const audioBlob = new Blob([data.wavBuffer], { type: 'audio/wav' });
+          const url = URL.createObjectURL(audioBlob);
+          
+          audioEl.src = url;
+          audioEl.play().catch(() => toast('Audio diblokir perangkat'));
+          audioEl.onended = () => { URL.revokeObjectURL(url); onFinish(); };
+        } 
+        else if (data.status === 'error') {
+          ttsWorker.removeEventListener('message', handleWorkerResponse);
+          fallbackTTS(payload.text, onFinish);
+        }
+      };
 
-        audioEl.src = url;
-        audioEl.play().catch(() => toast('Audio diblokir perangkat'));
-        
-        audioEl.onended = () => {
-          URL.revokeObjectURL(url);
-          onFinish();
-        };
-        return;
-
-      } catch (err) {
-        console.error("WebGPU Inference Error:", err);
-      }
+      ttsWorker.addEventListener('message', handleWorkerResponse);
+      return;
     }
 
-    // 3. Sistem Fallback ke suara dasar
-    if (!window.kokoroModel) toast("Suara AI belum siap, pakai suara bawaan.");
-    
+    // 3. Fallback Suara Robot
+    fallbackTTS(payload.text, onFinish);
+  }
+
+  function fallbackTTS(text, onFinish) {
+    toast("AI belum siap, menggunakan suara bawaan.");
     if ('speechSynthesis' in window) {
-      const u = new SpeechSynthesisUtterance(payload.text);
+      const u = new SpeechSynthesisUtterance(text);
       const targetLang = (lang === 'id') ? 'id-ID' : 'en-US';
       u.lang = targetLang; u.rate = 0.95; u.pitch = 1.0;
       
@@ -842,35 +916,5 @@
   const pendingReply = sessionStorage.getItem('sar_replyTo');
   if (pendingReply) { setReply(pendingReply); sessionStorage.removeItem('sar_replyTo'); toast(i18n[lang].toastReply + pendingReply); }
 </script>
-
-<!-- ================= WEB GPU SCRIPT UNTUK KOKORO-82M ================= -->
-<script type="module">
-  import { KokoroTTS } from "https://esm.sh/kokoro-js";
-
-  window.kokoroModel = null;
-  window.isKokoroLoading = false;
-
-  window.initKokoroWebGPU = async function() {
-    if (window.kokoroModel || window.isKokoroLoading) return;
-    window.isKokoroLoading = true;
-    
-    toast("Mengunduh Model Suara AI (~80MB)...", 4000);
-
-    try {
-      window.kokoroModel = await KokoroTTS.from_pretrained("hexgrad/Kokoro-82M", {
-        device: "webgpu", 
-        dtype: "q8", 
-      });
-      toast("AI Suara Siap Digunakan!");
-    } catch (e) {
-      console.error("Gagal load WebGPU:", e);
-      toast("WebGPU tidak didukung, pakai suara robot.");
-    }
-    window.isKokoroLoading = false;
-  };
-
-  window.initKokoroWebGPU();
-</script>
-
 </body>
 </html>
