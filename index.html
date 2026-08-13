@@ -124,17 +124,9 @@
     
     header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 16px 20px; background: rgba(11, 12, 16, 0.8); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(255,255,255,0.05); box-shadow: 0 4px 20px rgba(0,0,0,0.3); z-index: 10; position: relative; }
     
-    /* Header Logo & AI Status Badge */
     .header-center { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
     .logo { font-size: 22px; font-weight: 800; margin: 0; background: linear-gradient(90deg, #66fcf1, #45a29e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-align: center; }
     
-    .ai-badge { font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); color: #c5c6c7; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 5px; }
-    .ai-badge.loading { color: #ffca28; border-color: rgba(255, 202, 40, 0.4); animation: pulse-border 1.5s infinite; }
-    .ai-badge.ready { color: #66fcf1; border-color: rgba(102, 252, 241, 0.4); background: rgba(102, 252, 241, 0.1); }
-    .ai-badge.fallback { color: #ff6b6b; border-color: rgba(255, 107, 107, 0.4); }
-    
-    @keyframes pulse-border { 50% { border-color: rgba(255, 202, 40, 1); box-shadow: 0 0 8px rgba(255, 202, 40, 0.3); } }
-
     .primary-btn { background: linear-gradient(135deg, #45a29e, #1f2833); color: #fff; border: none; border-radius: 16px; padding: 14px 20px; font-weight: 700; font-size: 15px; cursor: pointer; transition: all 0.2s ease; box-shadow: 0 4px 15px rgba(69, 162, 158, 0.3); pointer-events: auto; flex-shrink: 0; white-space: nowrap; }
     .primary-btn:active { transform: scale(0.95); box-shadow: 0 2px 8px rgba(69, 162, 158, 0.2); }
     .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -205,10 +197,8 @@
       </button>
     </div>
     
-    <!-- HEADER CENTER DENGAN INDIKATOR STATUS AI -->
     <div class="header-center">
       <h1 class="logo">MESSENG-AR</h1>
-      <span id="aiStatusBadge" class="ai-badge loading">⏳ AI Loading...</span>
     </div>
 
     <div style="display: flex; gap: 8px; justify-content: flex-end;">
@@ -603,92 +593,12 @@
     openAR(currentPayload);
   };
 
-  /* ================= TTS & AUDIO (WEB WORKER IMPLEMENTATION) ================= */
+  /* ================= TTS & AUDIO ================= */
   let availableVoices = [];
   function populateVoices() { availableVoices = window.speechSynthesis.getVoices(); }
   if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
 
-  let ttsWorker = null;
-  let isWorkerReady = false;
-
-  const workerCode = `
-    import { KokoroTTS } from "https://esm.sh/kokoro-js";
-    let kokoroModel = null;
-
-    self.onmessage = async (event) => {
-      const { action, text, voice } = event.data;
-
-      if (action === 'init') {
-        try {
-          kokoroModel = await KokoroTTS.from_pretrained("hexgrad/Kokoro-82M", {
-            device: "webgpu",
-            dtype: "q8",
-          });
-          self.postMessage({ status: 'ready', mode: 'WebGPU' });
-        } catch (e) {
-          console.warn("Worker WebGPU gagal, mencoba WASM...");
-          try {
-            kokoroModel = await KokoroTTS.from_pretrained("hexgrad/Kokoro-82M", {
-              device: "wasm",
-              dtype: "q8",
-            });
-            self.postMessage({ status: 'ready', mode: 'WASM' });
-          } catch (err) {
-            self.postMessage({ status: 'error', error: "Perangkat tidak didukung" });
-          }
-        }
-      }
-
-      if (action === 'generate') {
-        if (!kokoroModel) {
-          self.postMessage({ status: 'error', error: "Model belum siap" });
-          return;
-        }
-
-        try {
-          const audioData = await kokoroModel.generate(text, { voice: voice, speed: 1.0 });
-          self.postMessage({ status: 'done', wavBuffer: audioData.wav });
-        } catch (err) {
-          self.postMessage({ status: 'error', error: err.message });
-        }
-      }
-    };
-  `;
-
-  // Update UI Status Badge Fungsi
-  function updateAIBadge(statusText, type) {
-    const badge = $('#aiStatusBadge');
-    if (!badge) return;
-    badge.textContent = statusText;
-    badge.className = 'ai-badge ' + type;
-  }
-
-  try {
-    const blob = new Blob([workerCode], { type: 'application/javascript' });
-    const workerUrl = URL.createObjectURL(blob);
-    ttsWorker = new Worker(workerUrl, { type: 'module' });
-    
-    ttsWorker.postMessage({ action: 'init' });
-    updateAIBadge("⏳ AI Loading...", "loading");
-
-    ttsWorker.onmessage = (event) => {
-      const data = event.data;
-      if (data.status === 'ready') {
-        isWorkerReady = true;
-        const modeLabel = data.mode === 'WebGPU' ? '⚡ AI Ready (WebGPU)' : '⚙️ AI Ready (WASM)';
-        updateAIBadge(modeLabel, "ready");
-        toast(`AI Suara Siap! (${data.mode})`);
-      } else if (data.status === 'error') {
-        updateAIBadge("🤖 Voice Robot", "fallback");
-        console.error("Worker error:", data.error);
-      }
-    };
-  } catch (e) {
-    updateAIBadge("🤖 Voice Robot", "fallback");
-    console.error("Gagal inisialisasi Web Worker:", e);
-  }
-
-  function speakAndPlay(payload, onFinish) {
+  async function speakAndPlay(payload, onFinish) {
     const audioEl = $('#arMessageAudio');
 
     if (payload.audio) {
@@ -698,42 +608,46 @@
       return;
     }
 
-    if (isWorkerReady && ttsWorker) {
-      toast("Kurir meracik suara... (Background Thread)");
-      
-      ttsWorker.postMessage({
-        action: 'generate',
-        text: payload.text,
-        voice: (lang === 'en') ? "af_heart" : "af_bella"
+    toast("Mengeja suara pesan...");
+    
+    // Timeout Controller 4 Detik agar jika API lama, langsung switch ke suara robot
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    try {
+      const response = await fetch("https://api-inference.huggingface.co/models/hexgrad/Kokoro-82M", {
+        method: "POST",
+        headers: {
+          "Authorization": "Bearer hf_xSjSjSjSjSjSjSjSjSjSjSjSjSjSjSjSjS", 
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          inputs: payload.text,
+          parameters: { voice: (lang === 'en') ? "af_heart" : "af_bella" }
+        }),
+        signal: controller.signal
       });
 
-      const handleWorkerResponse = (event) => {
-        const data = event.data;
-        if (data.status === 'done') {
-          ttsWorker.removeEventListener('message', handleWorkerResponse);
-          
-          const audioBlob = new Blob([data.wavBuffer], { type: 'audio/wav' });
-          const url = URL.createObjectURL(audioBlob);
-          
-          audioEl.src = url;
-          audioEl.play().catch(() => toast('Audio diblokir perangkat'));
-          audioEl.onended = () => { URL.revokeObjectURL(url); onFinish(); };
-        } 
-        else if (data.status === 'error') {
-          ttsWorker.removeEventListener('message', handleWorkerResponse);
-          fallbackTTS(payload.text, onFinish);
-        }
-      };
+      clearTimeout(timeoutId);
 
-      ttsWorker.addEventListener('message', handleWorkerResponse);
+      if (!response.ok) throw new Error("API Offline/Error");
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+
+      audioEl.src = url;
+      audioEl.play().catch(() => toast('Audio diblokir perangkat'));
+      audioEl.onended = () => { URL.revokeObjectURL(url); onFinish(); };
       return;
-    }
 
-    fallbackTTS(payload.text, onFinish);
+    } catch (err) {
+      clearTimeout(timeoutId);
+      console.warn("API Kokoro tidak merespons, menggunakan Web Speech API fallback:", err);
+      fallbackTTS(payload.text, onFinish);
+    }
   }
 
   function fallbackTTS(text, onFinish) {
-    toast("AI belum siap, menggunakan suara bawaan.");
     if ('speechSynthesis' in window) {
       const u = new SpeechSynthesisUtterance(text);
       const targetLang = (lang === 'id') ? 'id-ID' : 'en-US';
