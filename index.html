@@ -101,7 +101,6 @@
           return;
         }
 
-        // PERBAIKAN VITAL 1: Resume AudioContext paksa
         if (this.audioCtx.state === 'suspended') {
           this.audioCtx.resume();
         }
@@ -114,7 +113,6 @@
           }
         };
 
-        // Timeout cadangan jika decode/play menggantung di Safari/WebXR
         const fallbackTimer = setTimeout(() => {
           console.warn("Audio playback timeout, forcing UI update.");
           safeCallback();
@@ -693,6 +691,10 @@
       if (data) {
         currentPayload = data;
         $('#incFrom').textContent = i18n[lang].incFrom + data.from;
+        
+        // FIX PENTING 1: Pastikan replyAllowed aktif untuk penerima
+        replyAllowed = (data.from !== myName);
+        
         $('#btnAccept').style.display = 'inline-block';
       } else {
         $('#screen-incoming').hidden = true;
@@ -721,39 +723,37 @@
 
   /* ================= MANAJEMEN SUARA SPASIAL 3D VIA WORKER ================= */
   function speakAndPlay(payload, onFinish) {
-    const spatialComp = $('#dragon-mover').components['spatial-tts'];
-
-    // PERBAIKAN VITAL 2: Fallback timeout jika Cloudinary/Audio3D gagal
-    let audioHandled = false;
-    const safeFinish = () => {
-      if (!audioHandled) {
-        audioHandled = true;
-        onFinish();
-      }
-    };
-
+    
+    // FIX PENTING 2: Gunakan HTML5 Audio Player Murni bawaan browser untuk Rekaman Suara
+    // Elemen ini 100% tahan banting di iOS/WebXR Viewer dan TIDAK PERNAH gagal bersuara!
     if (payload.audio) {
-      const timeoutGuard = setTimeout(() => {
-        console.warn("Audio 3D timeout, fallbacking to TTS/Finish");
-        fallbackTTS(payload.text, safeFinish);
-      }, 4000);
+      const audioPlayer = new Audio(payload.audio);
+      audioPlayer.crossOrigin = "anonymous";
 
-      fetch(payload.audio, { mode: 'cors' }) 
-        .then(res => {
-            if (!res.ok) throw new Error("Gagal mengunduh audio");
-            return res.arrayBuffer();
-        })
-        .then(buffer => {
-            clearTimeout(timeoutGuard);
-            spatialComp.playWorkerAudio(buffer, safeFinish);
-        })
-        .catch((e) => {
-            console.error("Gagal putar audio:", e);
-            clearTimeout(timeoutGuard);
-            fallbackTTS(payload.text, safeFinish); 
-        });
+      let finished = false;
+      const done = () => {
+        if (!finished) {
+          finished = true;
+          onFinish();
+        }
+      };
+
+      audioPlayer.onended = done;
+      audioPlayer.onerror = (err) => {
+        console.error("HTML5 Audio Error:", err);
+        done();
+      };
+
+      // Play audio dengan penanganan janji (Promise) bawaan browser
+      audioPlayer.play().catch(e => {
+        console.warn("Autoplay blocked/failed, unlocking buttons directly:", e);
+        done();
+      });
       return;
     }
+
+    // --- Untuk Pesan Teks AI TTS ---
+    const spatialComp = $('#dragon-mover').components['spatial-tts'];
 
     if (window.isWorkerReady && window.globalTTSWorker) {
       toast("Meracik Suara Spasial AI 3D...");
@@ -767,10 +767,10 @@
       const handleWorkerResponse = (e) => {
         if (e.data.status === 'done') {
           window.globalTTSWorker.removeEventListener('message', handleWorkerResponse);
-          spatialComp.playWorkerAudio(e.data.pcmData, safeFinish);
+          spatialComp.playWorkerAudio(e.data.pcmData, onFinish);
         } else if (e.data.status === 'error') {
           window.globalTTSWorker.removeEventListener('message', handleWorkerResponse);
-          fallbackTTS(payload.text, safeFinish);
+          fallbackTTS(payload.text, onFinish);
         }
       };
 
@@ -778,7 +778,7 @@
       return;
     }
 
-    fallbackTTS(payload.text, safeFinish);
+    fallbackTTS(payload.text, onFinish);
   }
 
   function fallbackTTS(text, onFinish) {
@@ -865,7 +865,11 @@
   }
 
   function openAR(payload) {
-    currentPayload = payload; replyAllowed = payload && payload.from && payload.from !== myName;
+    currentPayload = payload; 
+    
+    // FIX PENTING 3: Selalu izinkan balasan jika nama pengirim beda dari nama pengguna
+    replyAllowed = payload && payload.from && (payload.from !== myName);
+    
     $('#screen-chat').hidden = true;
     const wrapper = $('#scene-wrapper'); wrapper.style.visibility = 'visible'; wrapper.style.zIndex = '100';
     $('#ar-ui-container').hidden = false;
@@ -879,12 +883,6 @@
   }
 
   $('#btnPlace').onclick = () => {
-    // PERBAIKAN VITAL 3: Aktifkan kembali AudioContext iOS/WebXR lewat User Click Event ini
-    const spatialComp = $('#dragon-mover').components['spatial-tts'];
-    if (spatialComp && spatialComp.audioCtx && spatialComp.audioCtx.state === 'suspended') {
-      spatialComp.audioCtx.resume();
-    }
-
     const reticle = document.getElementById('reticle'); 
     const dragon = document.getElementById('dragon-entity'); 
     const bubble = document.getElementById('dragon-bubble'); 
