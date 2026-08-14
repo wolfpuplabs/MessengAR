@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>MESSENG-AR Courier (WebXR)</title>
 
-  <!-- SMART iOS LAUNCHER MODAL -->
+  <!-- SMART iOS MANUAL LAUNCHER (COPY LINK GUIDE) -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const urlParams = new URLSearchParams(window.location.search);
@@ -25,29 +25,25 @@
           padding: 24px; text-align: center; color: #fff; font-family: system-ui, -apple-system, sans-serif;
         `;
 
-        // Format Deep Link resmi webxr:// untuk iOS WebXR Viewer
-        const currentUrlNoProtocol = window.location.href.replace(/^https?:\/\//, '');
-        const webxrLink = "webxr://" + currentUrlNoProtocol;
         const appStoreUrl = "https://apps.apple.com/us/app/webxr-viewer/id1295998056";
 
         iosModal.innerHTML = `
           <div style="background: #1f2833; border: 1px solid #45a29e; padding: 24px; border-radius: 20px; max-width: 360px; width: 100%;">
-            <h2 style="margin: 0 0 10px; color: #66fcf1; font-size: 18px;">Buka Pesan AR</h2>
+            <h2 style="margin: 0 0 10px; color: #66fcf1; font-size: 18px;">Pengguna iPhone (iOS)</h2>
             <p style="font-size: 13px; color: #c5c6c7; line-height: 1.5; margin-bottom: 20px;">
-              Fitur kamera AR memerlukan aplikasi WebXR Viewer agar dapat berjalan di iPhone.
+              Fitur kamera AR memerlukan aplikasi <b>WebXR Viewer</b>.<br><br>
+              Salin link pesan ini, lalu tempelkan (paste) di dalam browser aplikasi <b>WebXR Viewer</b>.
             </p>
 
-            <!-- Link Manual Pemicu Auto-Open App -->
-            <a href="${webxrLink}" style="
-              display: block; background: linear-gradient(135deg, #45a29e, #1f2833);
-              color: #fff; text-decoration: none; font-weight: bold; padding: 14px;
-              border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(69,162,158,0.4);
-              font-size: 14px;
+            <button id="btnCopyLinkIOS" style="
+              width: 100%; background: linear-gradient(135deg, #45a29e, #1f2833);
+              border: none; color: #fff; padding: 14px; border-radius: 12px;
+              font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px rgba(69,162,158,0.4);
+              margin-bottom: 10px;
             ">
-              Buka di WebXR Viewer
-            </a>
+              Salin Link Pesan
+            </button>
 
-            <!-- Link Alternatif jika belum ter-install -->
             <a href="${appStoreUrl}" target="_blank" style="
               display: block; background: transparent; border: 1px solid rgba(102, 252, 241, 0.4);
               color: #66fcf1; text-decoration: none; padding: 12px; border-radius: 12px;
@@ -60,12 +56,19 @@
               width: 100%; background: transparent; border: none;
               color: #8892b0; padding: 8px; border-radius: 12px; font-weight: 500; cursor: pointer; font-size: 12px;
             ">
-              Lanjutkan di Safari
+              Tutup Panduan
             </button>
           </div>
         `;
 
         document.body.appendChild(iosModal);
+
+        document.getElementById('btnCopyLinkIOS').onclick = function () {
+          navigator.clipboard.writeText(window.location.href).then(() => {
+            this.textContent = "Link Tersalin!";
+            setTimeout(() => { this.textContent = "Salin Link Pesan"; }, 2000);
+          });
+        };
 
         document.getElementById('btnContinueBrowser').onclick = function () {
           iosModal.remove();
