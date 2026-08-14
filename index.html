@@ -395,7 +395,7 @@
 </div>
 
 <script>
-  /* ================= FIREBASE CONFIG ================= */
+  /* ================= FIREBASE & CLOUDINARY CONFIG ================= */
   const firebaseConfig = {
     apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
     authDomain: "messeng-ar.firebaseapp.com",
@@ -409,7 +409,6 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // === DATA CLOUDINARY ===
   const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/mspxd4by/video/upload"; 
   const CLOUDINARY_UPLOAD_PRESET = "preset_suara"; 
 
@@ -459,7 +458,6 @@
   function applyLang() {
     const t = i18n[lang];
     $('#btnSend').title = t.btnSend; 
-    
     $('#lblAutoDelete').textContent = t.lblAutoDel; $('#txt').placeholder = replyTo ? t.replyLabel + replyTo + '...' : t.plcTxt;
     if(replyTo) $('#replyLabel').textContent = t.replyLabel + replyTo;
     $('#shareTitleUI').textContent = t.titleShare; $('#shareDescUI').textContent = t.descShare;
@@ -527,7 +525,6 @@
         if(confirm(t.confirmDelMsg)) { 
           const msgId = Array.isArray(m.payload) ? m.payload[1] : (m.payload ? m.payload.id : null);
           if (msgId) { db.ref('messages/' + msgId).remove(); }
-          
           msgs.splice(i, 1); store.set('sar_msgs', JSON.stringify(msgs)); renderMsgs(); 
         } 
       };
@@ -576,8 +573,8 @@
       mRec.onstop = () => {
         st.getTracks().forEach(track => track.stop()); 
         
-        // Simpan sebagai raw Blob, biarkan browser memilih format aslinya (mp4 untuk Apple, webm untuk Android/PC)
-        pendingAudioBlob = new Blob(ch, { type: mRec.mimeType }); 
+        // PERBAIKAN 1: Pastikan tipe data dikunci ke MP4 (format ramah Apple)
+        pendingAudioBlob = new Blob(ch, { type: mRec.mimeType || 'audio/mp4' }); 
         
         toast(t.toastMicAtt);
         mRec = null; $('#btnMic').classList.remove('mic-on');
@@ -606,7 +603,9 @@
       if (pendingAudioBlob) {
         $('#shareLink').textContent = "Mengunggah suara ke server...";
         const formData = new FormData();
-        formData.append("file", pendingAudioBlob);
+        
+        // PERBAIKAN 2: Paksa beri nama 'rekaman.mp4' agar Cloudinary merakitnya dengan benar
+        formData.append("file", pendingAudioBlob, "rekaman.mp4");
         formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
         const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
@@ -702,21 +701,32 @@
 
   /* ================= MANAJEMEN SUARA SPASIAL 3D VIA WORKER ================= */
   function speakAndPlay(payload, onFinish) {
-    const spatialComp = $('#dragon-mover').components['spatial-tts'];
-
-    // 1. Jika ada rekaman audio mic biasa
+    
+    // PERBAIKAN 3: Jika ini rekaman manusia (bukan Robot AI), 
+    // pakai pemutar HTML5 biasa, JANGAN pakai Audio 3D Spasial yang sering diblokir Safari.
     if (payload.audio) {
-      fetch(payload.audio, { mode: 'cors' }) // Tambahan izin anti-blokir CORS
-        .then(res => res.arrayBuffer())
-        .then(buffer => spatialComp.playWorkerAudio(buffer, onFinish))
-        .catch((e) => {
-            console.error("Gagal putar audio:", e);
-            fallbackTTS(payload.text, onFinish);
-        });
+      const standardAudio = new Audio(payload.audio);
+      standardAudio.crossOrigin = "anonymous";
+      
+      // Begitu audio selesai, panggil tombol Balas & Kembali
+      standardAudio.onended = onFinish;
+      
+      // Jika error, panggil tombol Balas & Kembali agar aplikasi tidak stuck
+      standardAudio.onerror = (e) => {
+          console.error("Gagal memutar audio dari server:", e);
+          fallbackTTS(payload.text, onFinish);
+      };
+      
+      standardAudio.play().catch((err) => {
+          console.error("Autoplay dicegat browser:", err);
+          fallbackTTS(payload.text, onFinish);
+      });
       return;
     }
 
-    // 2. Jika Worker Kokoro AI Siap
+    // --- Di bawah ini tetap sama (Khusus untuk Pesan Teks tanpa Suara) ---
+    const spatialComp = $('#dragon-mover').components['spatial-tts'];
+
     if (window.isWorkerReady && window.globalTTSWorker) {
       toast("Meracik Suara Spasial AI 3D...");
       
@@ -740,7 +750,6 @@
       return;
     }
 
-    // 3. Fallback jika Worker belum siap / gagal
     fallbackTTS(payload.text, onFinish);
   }
 
@@ -897,6 +906,7 @@
             deleteMsgByPayloadId(currentPayload.id);
         }
 
+        // Panggil sistem suara yang sudah kita perbaiki
         speakAndPlay(currentPayload, () => {
            if (replyAllowed) $('#btnReply').hidden = false;
            $('#btnBack').hidden = false; 
