@@ -395,7 +395,7 @@
 </div>
 
 <script>
-  /* ================= FIREBASE & CLOUDINARY CONFIG ================= */
+  /* ================= FIREBASE CONFIG ================= */
   const firebaseConfig = {
     apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
     authDomain: "messeng-ar.firebaseapp.com",
@@ -409,7 +409,7 @@
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  // === GANTI DUA BARIS INI DENGAN DATA DARI AKUN CLOUDINARY ANDA ===
+  // === DATA CLOUDINARY ===
   const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/mspxd4by/video/upload"; 
   const CLOUDINARY_UPLOAD_PRESET = "preset_suara"; 
 
@@ -576,8 +576,8 @@
       mRec.onstop = () => {
         st.getTracks().forEach(track => track.stop()); 
         
-        // Simpan sebagai raw Blob, bukan diconvert ke Base64 agar lebih ringan
-        pendingAudioBlob = new Blob(ch, { type: 'audio/webm' }); 
+        // Simpan sebagai raw Blob, biarkan browser memilih format aslinya (mp4 untuk Apple, webm untuk Android/PC)
+        pendingAudioBlob = new Blob(ch, { type: mRec.mimeType }); 
         
         toast(t.toastMicAtt);
         mRec = null; $('#btnMic').classList.remove('mic-on');
@@ -603,7 +603,6 @@
     let finalAudioUrl = null;
 
     try {
-      // 1. Jika ada rekaman suara, upload ke Cloudinary dulu
       if (pendingAudioBlob) {
         $('#shareLink').textContent = "Mengunggah suara ke server...";
         const formData = new FormData();
@@ -614,13 +613,12 @@
         const data = await res.json();
         
         if (data.secure_url) {
-            finalAudioUrl = data.secure_url; // Dapatkan link URL-nya
+            finalAudioUrl = data.secure_url;
         } else {
             throw new Error("Gagal mengunggah ke Cloudinary");
         }
       }
 
-      // 2. Simpan URL suara dan Teks ke Firebase Realtime Database
       $('#shareLink').textContent = "Menyimpan ke AR Cloud...";
       const payloadObj = { 
         v: 1, 
@@ -628,7 +626,7 @@
         from: myName, 
         to: replyTo || null, 
         text: text || '(Voice Message)', 
-        audio: finalAudioUrl, // Gunakan link URL asli 
+        audio: finalAudioUrl,
         t: Date.now() 
       };
       
@@ -708,10 +706,13 @@
 
     // 1. Jika ada rekaman audio mic biasa
     if (payload.audio) {
-      fetch(payload.audio)
+      fetch(payload.audio, { mode: 'cors' }) // Tambahan izin anti-blokir CORS
         .then(res => res.arrayBuffer())
         .then(buffer => spatialComp.playWorkerAudio(buffer, onFinish))
-        .catch(() => fallbackTTS(payload.text, onFinish));
+        .catch((e) => {
+            console.error("Gagal putar audio:", e);
+            fallbackTTS(payload.text, onFinish);
+        });
       return;
     }
 
@@ -728,7 +729,6 @@
       const handleWorkerResponse = (e) => {
         if (e.data.status === 'done') {
           window.globalTTSWorker.removeEventListener('message', handleWorkerResponse);
-          // Masukkan pcmData (ArrayBuffer) langsung ke sistem 3D Audio Three.js!
           spatialComp.playWorkerAudio(e.data.pcmData, onFinish);
         } else if (e.data.status === 'error') {
           window.globalTTSWorker.removeEventListener('message', handleWorkerResponse);
