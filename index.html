@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>MESSENG-AR Courier (WebXR)</title>
 
-  <!-- SMART iOS / WEBXR LAUNCHER (TOMBOL MANUAL) -->
+  <!-- SMART IN-APP BROWSER DETECTOR (NO DEEP LINK, NO EMOJI) -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const urlParams = new URLSearchParams(window.location.search);
@@ -13,10 +13,10 @@
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
       
       const isiOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
-      const isWebXRApp = /WebXRViewer/i.test(userAgent);
+      const isInAppBrowser = /FBAN|FBAV|Instagram|WhatsApp|Line/i.test(userAgent);
 
-      // Jika dibuka di iOS TAPI BUKAN dari dalam WebXR Viewer
-      if (isiOS && !isWebXRApp && isARMessage) {
+      // Tampilkan petunjuk hanya jika dibuka dari internal browser WhatsApp/Sosmed di iOS
+      if (isiOS && isInAppBrowser && isARMessage) {
         const iosBanner = document.createElement('div');
         iosBanner.style.cssText = `
           position: fixed; inset: 0; z-index: 99999;
@@ -25,29 +25,17 @@
           padding: 24px; text-align: center; color: #fff; font-family: system-ui, -apple-system, sans-serif;
         `;
 
-        const currentUrlNoProtocol = window.location.href.replace(/^https?:\/\//, '');
-        const wxrvLink = "wxrv://" + currentUrlNoProtocol;
-
         iosBanner.innerHTML = `
           <div style="background: #1f2833; border: 1px solid #45a29e; padding: 24px; border-radius: 20px; max-width: 360px; width: 100%;">
-            <div style="font-size: 40px; margin-bottom: 10px;">🥽</div>
-            <h2 style="margin: 0 0 10px; color: #66fcf1; font-size: 20px;">Buka Pesan AR</h2>
+            <h2 style="margin: 0 0 10px; color: #66fcf1; font-size: 18px;">Buka di Safari</h2>
             <p style="font-size: 13px; color: #c5c6c7; line-height: 1.5; margin-bottom: 20px;">
-              Agar fitur kamera WebXR berjalan lancar di iPhone, silakan buka via aplikasi WebXR Viewer:
+              Fitur kamera AR membutuhkan browser penuh. Tekan tombol titik tiga/bagikan di pojok kanan atas, lalu pilih "Buka di Safari".
             </p>
 
-            <a href="${wxrvLink}" style="
-              display: block; background: linear-gradient(135deg, #45a29e, #1f2833);
-              color: #fff; text-decoration: none; font-weight: bold; padding: 14px;
-              border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 15px rgba(69,162,158,0.4);
-              font-size: 14px;
-            ">
-              🚀 Buka di WebXR Viewer
-            </a>
-
             <button id="btnContinueBrowser" style="
-              width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.2);
-              color: #8892b0; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 13px;
+              width: 100%; background: linear-gradient(135deg, #45a29e, #1f2833);
+              border: none; color: #fff; padding: 12px; border-radius: 12px;
+              font-weight: bold; font-size: 13px; cursor: pointer; box-shadow: 0 4px 15px rgba(69,162,158,0.4);
             ">
               Lanjutkan di Browser Ini
             </button>
