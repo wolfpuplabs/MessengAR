@@ -96,11 +96,29 @@
       },
 
       playWorkerAudio: function (pcmArrayBuffer, onEndedCallback) {
-        if (!this.sound || !this.audioCtx) return;
+        if (!this.sound || !this.audioCtx) {
+          if (onEndedCallback) onEndedCallback();
+          return;
+        }
 
+        // PERBAIKAN VITAL 1: Resume AudioContext paksa
         if (this.audioCtx.state === 'suspended') {
           this.audioCtx.resume();
         }
+
+        let hasFinished = false;
+        const safeCallback = () => {
+          if (!hasFinished) {
+            hasFinished = true;
+            if (onEndedCallback) onEndedCallback();
+          }
+        };
+
+        // Timeout cadangan jika decode/play menggantung di Safari/WebXR
+        const fallbackTimer = setTimeout(() => {
+          console.warn("Audio playback timeout, forcing UI update.");
+          safeCallback();
+        }, 8000);
 
         this.audioCtx.decodeAudioData(pcmArrayBuffer, (buffer) => {
           if (this.sound.isPlaying) this.sound.stop();
@@ -108,13 +126,20 @@
           this.sound.setBuffer(buffer);
           this.sound.play();
 
-          if (onEndedCallback) {
-            const source = this.sound.source;
-            if (source) source.onended = onEndedCallback;
+          const source = this.sound.source;
+          if (source) {
+            source.onended = () => {
+              clearTimeout(fallbackTimer);
+              safeCallback();
+            };
+          } else {
+            clearTimeout(fallbackTimer);
+            safeCallback();
           }
         }, (err) => {
           console.error("Gagal decode data Audio Worker:", err);
-          if (onEndedCallback) onEndedCallback();
+          clearTimeout(fallbackTimer);
+          safeCallback();
         });
       }
     });
@@ -572,10 +597,7 @@
       
       mRec.onstop = () => {
         st.getTracks().forEach(track => track.stop()); 
-        
-        // Simpan sebagai raw Blob, biarkan browser memilih format aslinya
         pendingAudioBlob = new Blob(ch, { type: mRec.mimeType }); 
-        
         toast(t.toastMicAtt);
         mRec = null; $('#btnMic').classList.remove('mic-on');
       };
@@ -610,7 +632,6 @@
         const data = await res.json();
         
         if (data.secure_url) {
-            // TRIK SAKTI: Paksa URL Cloudinary berubah menjadi .mp3 di server mereka
             finalAudioUrl = data.secure_url.replace(/\.[^/.]+$/, ".mp3");
         } else {
             throw new Error("Gagal mengunggah ke Cloudinary");
@@ -702,18 +723,34 @@
   function speakAndPlay(payload, onFinish) {
     const spatialComp = $('#dragon-mover').components['spatial-tts'];
 
+    // PERBAIKAN VITAL 2: Fallback timeout jika Cloudinary/Audio3D gagal
+    let audioHandled = false;
+    const safeFinish = () => {
+      if (!audioHandled) {
+        audioHandled = true;
+        onFinish();
+      }
+    };
+
     if (payload.audio) {
-      // Pastikan ada mode 'cors' agar Cloudinary tidak diblokir saat decode ke Audio 3D
+      const timeoutGuard = setTimeout(() => {
+        console.warn("Audio 3D timeout, fallbacking to TTS/Finish");
+        fallbackTTS(payload.text, safeFinish);
+      }, 4000);
+
       fetch(payload.audio, { mode: 'cors' }) 
         .then(res => {
-            if (!res.ok) throw new Error("Gagal mengunduh suara dari server");
+            if (!res.ok) throw new Error("Gagal mengunduh audio");
             return res.arrayBuffer();
         })
-        .then(buffer => spatialComp.playWorkerAudio(buffer, onFinish))
+        .then(buffer => {
+            clearTimeout(timeoutGuard);
+            spatialComp.playWorkerAudio(buffer, safeFinish);
+        })
         .catch((e) => {
             console.error("Gagal putar audio:", e);
-            // Jika gagal, pastikan aplikasi tidak stuck dan tombol tetap muncul
-            fallbackTTS(payload.text, onFinish); 
+            clearTimeout(timeoutGuard);
+            fallbackTTS(payload.text, safeFinish); 
         });
       return;
     }
@@ -730,10 +767,10 @@
       const handleWorkerResponse = (e) => {
         if (e.data.status === 'done') {
           window.globalTTSWorker.removeEventListener('message', handleWorkerResponse);
-          spatialComp.playWorkerAudio(e.data.pcmData, onFinish);
+          spatialComp.playWorkerAudio(e.data.pcmData, safeFinish);
         } else if (e.data.status === 'error') {
           window.globalTTSWorker.removeEventListener('message', handleWorkerResponse);
-          fallbackTTS(payload.text, onFinish);
+          fallbackTTS(payload.text, safeFinish);
         }
       };
 
@@ -741,18 +778,17 @@
       return;
     }
 
-    fallbackTTS(payload.text, onFinish);
+    fallbackTTS(payload.text, safeFinish);
   }
 
   function fallbackTTS(text, onFinish) {
-    toast("AI belum siap, memakai Web Speech API.");
-    if ('speechSynthesis' in window) {
+    if ('speechSynthesis' in window && text && text !== '(Voice Message)') {
       const u = new SpeechSynthesisUtterance(text);
       u.lang = (lang === 'id') ? 'id-ID' : 'en-US';
       u.onend = onFinish; u.onerror = onFinish;
       speechSynthesis.speak(u);
     } else {
-      setTimeout(onFinish, 2000);
+      setTimeout(onFinish, 1000);
     }
   }
 
@@ -843,6 +879,12 @@
   }
 
   $('#btnPlace').onclick = () => {
+    // PERBAIKAN VITAL 3: Aktifkan kembali AudioContext iOS/WebXR lewat User Click Event ini
+    const spatialComp = $('#dragon-mover').components['spatial-tts'];
+    if (spatialComp && spatialComp.audioCtx && spatialComp.audioCtx.state === 'suspended') {
+      spatialComp.audioCtx.resume();
+    }
+
     const reticle = document.getElementById('reticle'); 
     const dragon = document.getElementById('dragon-entity'); 
     const bubble = document.getElementById('dragon-bubble'); 
