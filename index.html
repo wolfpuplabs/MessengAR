@@ -5,6 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <title>MESSENG-AR Courier (WebXR)</title>
 
+  <!-- AUTO OPEN WITH MOZILLA WEBXR (wxrv://) / REDIRECT TO STORE IF NOT INSTALLED -->
+  <script>
+    (function autoLaunchWebXR() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const isARMessage = urlParams.has('id');
+      const isAutoRedirect = urlParams.get('redirected') === '1';
+
+      // Jalankan auto open hanya jika ada parameter pesan '?id=' dan belum pernah diredirect
+      if (isARMessage && !isAutoRedirect) {
+        const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+        const isiOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream;
+
+        // Jangan eksekusi jika sudah berjalan di dalam app WebXR Viewer
+        const isWebXRBrowser = /WebXRViewer/i.test(userAgent);
+
+        if (isiOS && !isWebXRBrowser) {
+          // Tandai URL agar tidak perulangan (looping redirect)
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set('redirected', '1');
+          
+          // Deep link ke Mozilla WebXR Viewer di iOS menggunakan wxrv://
+          const webxrDeepLink = "wxrv://" + currentUrl.href.replace(/^https?:\/\//, '');
+
+          // Fallback Link ke App Store jika WebXR Viewer belum terinstall
+          const appStoreUrl = "https://apps.apple.com/us/app/webxr-viewer/id1292883394";
+
+          const start = Date.now();
+
+          // 1. Coba Buka App WebXR Viewer via Custom Scheme
+          window.location.href = webxrDeepLink;
+
+          // 2. Jika dalam 2.5 detik app tidak terbuka (belum terinstall), arahkan ke App Store
+          setTimeout(function() {
+            if (Date.now() - start < 3000) {
+              window.location.href = appStoreUrl;
+            }
+          }, 2500);
+        }
+      }
+    })();
+  </script>
+
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://unpkg.com/aframe-look-at-component@0.8.0/dist/aframe-look-at-component.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.2.0/dist/aframe-extras.min.js"></script>
@@ -451,7 +493,7 @@
     id: {
       btnSend: "Kirim", plcTxt: "Ketik pesan...", replyLabel: "Membalas ke ", lblAutoDel: "Hapus otomatis setelah dibaca",
       titleShare: "Pesan Siap Terbang!", descShare: "Bagikan link ini ke penerima. Saat dibuka, kurir akan muncul di AR mengantar pesanmu.",
-      btnShare: "Bagikan", btnCopy: "Salin", titleInc: "Kurir Tiba!", btnAccept: "Buka di AR", btnIncLater: "Tutup",
+      btnShare: "Bagikan", btnCopy: "Salin", titleInc: "Courier Tiba!", btnAccept: "Buka di AR", btnIncLater: "Tutup",
       titleName: "Selamat Datang", descName: "Masukkan nama kamu sebagai pengirim:", plcName: "Nama...", btnNameSave: "Mulai",
       arHintScan: "Pindai lantai hingga cincin putih muncul.", arHintFound: "Lantai ditemukan! Sentuh layar untuk memunculkan pesan.",
       arHintSearch: "Mencari lantai/meja...", arHintLoad: "Memuat AR...", btnPlace: "Tampilkan Pesan", btnReply: "Balas Pesan", btnBack: "Kembali",
@@ -692,7 +734,6 @@
         currentPayload = data;
         $('#incFrom').textContent = i18n[lang].incFrom + data.from;
         
-        // FIX PENTING 1: Pastikan replyAllowed aktif untuk penerima
         replyAllowed = (data.from !== myName);
         
         $('#btnAccept').style.display = 'inline-block';
@@ -723,9 +764,6 @@
 
   /* ================= MANAJEMEN SUARA SPASIAL 3D VIA WORKER ================= */
   function speakAndPlay(payload, onFinish) {
-    
-    // FIX PENTING 2: Gunakan HTML5 Audio Player Murni bawaan browser untuk Rekaman Suara
-    // Elemen ini 100% tahan banting di iOS/WebXR Viewer dan TIDAK PERNAH gagal bersuara!
     if (payload.audio) {
       const audioPlayer = new Audio(payload.audio);
       audioPlayer.crossOrigin = "anonymous";
@@ -744,7 +782,6 @@
         done();
       };
 
-      // Play audio dengan penanganan janji (Promise) bawaan browser
       audioPlayer.play().catch(e => {
         console.warn("Autoplay blocked/failed, unlocking buttons directly:", e);
         done();
@@ -752,7 +789,6 @@
       return;
     }
 
-    // --- Untuk Pesan Teks AI TTS ---
     const spatialComp = $('#dragon-mover').components['spatial-tts'];
 
     if (window.isWorkerReady && window.globalTTSWorker) {
@@ -867,7 +903,6 @@
   function openAR(payload) {
     currentPayload = payload; 
     
-    // FIX PENTING 3: Selalu izinkan balasan jika nama pengirim beda dari nama pengguna
     replyAllowed = payload && payload.from && (payload.from !== myName);
     
     $('#screen-chat').hidden = true;
