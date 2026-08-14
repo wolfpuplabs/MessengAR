@@ -43,7 +43,6 @@
           if (!kokoroModel) return self.postMessage({ status: 'error', error: "Model belum siap" });
           try {
             const audioData = await kokoroModel.generate(text, { voice: voice, speed: 1.0 });
-            // Transfer ArrayBuffer langsung tanpa diduplikasi
             self.postMessage({ status: 'done', pcmData: audioData.wav.buffer, sampleRate: 24000 }, [audioData.wav.buffer]);
           } catch (err) {
             self.postMessage({ status: 'error', error: err.message });
@@ -78,44 +77,37 @@
         this.listener = null;
         this.audioCtx = null;
 
-        // Inisialisasi AudioListener di Kamera Three.js saat Scene siap
         this.el.sceneEl.addEventListener('render-target-loaded', () => {
           const camera = this.el.sceneEl.camera;
           if (camera && !this.listener) {
             this.listener = new THREE.AudioListener();
             camera.add(this.listener);
 
-            // Three.js PositionalAudio Component
             this.sound = new THREE.PositionalAudio(this.listener);
             this.sound.setRefDistance(this.data.refDistance);
             this.sound.setMaxDistance(this.data.maxDistance);
             this.sound.setRolloffFactor(this.data.rolloffFactor);
             this.sound.setDistanceModel('linear');
 
-            // Tempelkan PositionalAudio ke Object3D milik Entity (Naga)
             this.el.object3D.add(this.sound);
             this.audioCtx = this.listener.context;
           }
         });
       },
 
-      // Fungsi untuk menerima PCM ArrayBuffer dari Web Worker lalu memutarnya secara Spasial 3D
       playWorkerAudio: function (pcmArrayBuffer, onEndedCallback) {
         if (!this.sound || !this.audioCtx) return;
 
-        // Resume AudioContext jika ter-pause oleh kebijakan Autoplay Browser
         if (this.audioCtx.state === 'suspended') {
           this.audioCtx.resume();
         }
 
-        // Decode binary WAV dari Worker ke AudioBuffer bawaan Web Audio API
         this.audioCtx.decodeAudioData(pcmArrayBuffer, (buffer) => {
           if (this.sound.isPlaying) this.sound.stop();
           
           this.sound.setBuffer(buffer);
           this.sound.play();
 
-          // Handler saat suara selesai
           if (onEndedCallback) {
             const source = this.sound.source;
             if (source) source.onended = onEndedCallback;
@@ -376,16 +368,13 @@
     </a-entity>
     
     <a-entity id="dragon-entity" visible="false" position="0 0 0">
-      
       <a-entity id="magic-burst" visible="false" position="0 0.1 0">
         <a-ring id="magic-ring" color="#ff7700" radius-inner="0.05" radius-outer="0.1" rotation="-90 0 0" material="shader: flat; transparent: true; opacity: 1"></a-ring>
         <a-sphere id="magic-sphere" color="#ffffff" radius="0.05" material="shader: flat; transparent: true; opacity: 1"></a-sphere>
       </a-entity>
 
-      <!-- PASANG KOMPONEN SPATIAL-TTS DI MUKA NAGA -->
       <a-entity id="dragon-mover" random-flight spatial-tts="refDistance: 1; maxDistance: 10; rolloffFactor: 1">
         <a-entity gltf-model="https://wolfpuplabs.github.io/MessengAR/dragon.glb" scale="0.002 0.002 0.002" position="0 0 0" animation-mixer></a-entity>
-        
         <a-entity id="dragon-fire-dust" fire-dust position="0 0.02 -0.05"></a-entity>
 
         <a-entity id="dragon-bubble" look-at="[camera]" position="0 0.45 0" visible="false">
@@ -406,7 +395,7 @@
 </div>
 
 <script>
-  /* ================= FIREBASE CONFIG ================= */
+  /* ================= FIREBASE & CLOUDINARY CONFIG ================= */
   const firebaseConfig = {
     apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
     authDomain: "messeng-ar.firebaseapp.com",
@@ -419,6 +408,10 @@
   
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
+
+  // === GANTI DUA BARIS INI DENGAN DATA DARI AKUN CLOUDINARY ANDA ===
+  const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/mspxd4by/video/upload"; 
+  const CLOUDINARY_UPLOAD_PRESET = "preset_suara"; 
 
   /* ================= UTIL & STORAGE ================= */
   const $ = s => document.querySelector(s);
@@ -490,7 +483,7 @@
   let myName = store.get('sar_name', '');
   let msgs = JSON.parse(store.get('sar_msgs', '[]'));
   let autoDelete = store.get('sar_autodel', 'false') === 'true';
-  let currentPayload = null; let pendingAudio = null; let lastShare = ''; let replyTo = null; let replyAllowed = false;
+  let currentPayload = null; let pendingAudioBlob = null; let lastShare = ''; let replyTo = null; let replyAllowed = false;
 
   $('#chkAutoDelete').checked = autoDelete;
   $('#chkAutoDelete').onchange = (e) => { autoDelete = e.target.checked; store.set('sar_autodel', autoDelete); };
@@ -575,35 +568,72 @@
     const t = i18n[lang];
     if (mRec) { mRec.stop(); return; }
     if (!navigator.mediaDevices) { toast(t.toastMicErr); return; }
+    
     navigator.mediaDevices.getUserMedia({ audio: true }).then(st => {
-      mRec = new MediaRecorder(st, { audioBitsPerSecond: 20000 }); 
+      mRec = new MediaRecorder(st); 
       const ch = []; mRec.ondataavailable = e => ch.push(e.data);
+      
       mRec.onstop = () => {
-        st.getTracks().forEach(track => track.stop()); const r = new FileReader();
-        r.onload = () => { pendingAudio = r.result; toast(t.toastMicAtt); };
-        r.readAsDataURL(new Blob(ch, { type: mRec.mimeType }));
+        st.getTracks().forEach(track => track.stop()); 
+        
+        // Simpan sebagai raw Blob, bukan diconvert ke Base64 agar lebih ringan
+        pendingAudioBlob = new Blob(ch, { type: 'audio/webm' }); 
+        
+        toast(t.toastMicAtt);
         mRec = null; $('#btnMic').classList.remove('mic-on');
       };
+      
       mRec.start(); $('#btnMic').classList.add('mic-on'); toast(t.toastMicRec);
       setTimeout(() => { if (mRec) mRec.stop() }, 10000); 
     }).catch(() => toast(t.toastMicDeny));
   };
 
-  /* ================= SEND TO FIREBASE ================= */
+  /* ================= SEND TO FIREBASE & CLOUDINARY ================= */
   $('#btnSend').onclick = async () => {
     const text = $('#txt').value.trim();
-    if (!text && !pendingAudio) return toast(i18n[lang].toastEmpty);
+    if (!text && !pendingAudioBlob) return toast(i18n[lang].toastEmpty);
     
     const uniqueId = uid();
-    const payloadObj = { v: 1, id: uniqueId, from: myName, to: replyTo || null, text: text || '(Voice Message)', audio: pendingAudio, t: Date.now() };
-    const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
     
     $('#screen-share').hidden = false;
-    $('#shareLink').textContent = "Mengunggah pesan ke AR Cloud...";
+    $('#shareLink').textContent = "Menyiapkan pesan...";
     $('#btnShare').disabled = true;
     $('#btnCopy').disabled = true;
 
+    let finalAudioUrl = null;
+
     try {
+      // 1. Jika ada rekaman suara, upload ke Cloudinary dulu
+      if (pendingAudioBlob) {
+        $('#shareLink').textContent = "Mengunggah suara ke server...";
+        const formData = new FormData();
+        formData.append("file", pendingAudioBlob);
+        formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+        const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
+        const data = await res.json();
+        
+        if (data.secure_url) {
+            finalAudioUrl = data.secure_url; // Dapatkan link URL-nya
+        } else {
+            throw new Error("Gagal mengunggah ke Cloudinary");
+        }
+      }
+
+      // 2. Simpan URL suara dan Teks ke Firebase Realtime Database
+      $('#shareLink').textContent = "Menyimpan ke AR Cloud...";
+      const payloadObj = { 
+        v: 1, 
+        id: uniqueId, 
+        from: myName, 
+        to: replyTo || null, 
+        text: text || '(Voice Message)', 
+        audio: finalAudioUrl, // Gunakan link URL asli 
+        t: Date.now() 
+      };
+      
+      const compactPayload = [1, payloadObj.id, payloadObj.from, payloadObj.to, payloadObj.text, payloadObj.audio, payloadObj.t];
+      
       await db.ref('messages/' + uniqueId).set(payloadObj);
       
       if (!autoDelete) {
@@ -623,7 +653,7 @@
       console.error(error);
     }
     
-    $('#txt').value = ''; pendingAudio = null; $('#btnMic').classList.remove('mic-on'); setReply(null); 
+    $('#txt').value = ''; pendingAudioBlob = null; $('#btnMic').classList.remove('mic-on'); setReply(null); 
   };
 
   $('#btnShareBack').onclick = () => $('#screen-share').hidden = true;
@@ -867,7 +897,6 @@
             deleteMsgByPayloadId(currentPayload.id);
         }
 
-        // MAINKAN SUARA SPASIAL DARI NAGA
         speakAndPlay(currentPayload, () => {
            if (replyAllowed) $('#btnReply').hidden = false;
            $('#btnBack').hidden = false; 
