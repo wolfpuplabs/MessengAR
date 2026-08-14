@@ -573,8 +573,8 @@
       mRec.onstop = () => {
         st.getTracks().forEach(track => track.stop()); 
         
-        // PERBAIKAN 1: Pastikan tipe data dikunci ke MP4 (format ramah Apple)
-        pendingAudioBlob = new Blob(ch, { type: mRec.mimeType || 'audio/mp4' }); 
+        // Simpan sebagai raw Blob, biarkan browser memilih format aslinya
+        pendingAudioBlob = new Blob(ch, { type: mRec.mimeType }); 
         
         toast(t.toastMicAtt);
         mRec = null; $('#btnMic').classList.remove('mic-on');
@@ -603,16 +603,15 @@
       if (pendingAudioBlob) {
         $('#shareLink').textContent = "Mengunggah suara ke server...";
         const formData = new FormData();
-        
-        // PERBAIKAN 2: Paksa beri nama 'rekaman.mp4' agar Cloudinary merakitnya dengan benar
-        formData.append("file", pendingAudioBlob, "rekaman.mp4");
+        formData.append("file", pendingAudioBlob); 
         formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
 
         const res = await fetch(CLOUDINARY_URL, { method: "POST", body: formData });
         const data = await res.json();
         
         if (data.secure_url) {
-            finalAudioUrl = data.secure_url;
+            // TRIK SAKTI: Paksa URL Cloudinary berubah menjadi .mp3 di server mereka
+            finalAudioUrl = data.secure_url.replace(/\.[^/.]+$/, ".mp3");
         } else {
             throw new Error("Gagal mengunggah ke Cloudinary");
         }
@@ -701,31 +700,23 @@
 
   /* ================= MANAJEMEN SUARA SPASIAL 3D VIA WORKER ================= */
   function speakAndPlay(payload, onFinish) {
-    
-    // PERBAIKAN 3: Jika ini rekaman manusia (bukan Robot AI), 
-    // pakai pemutar HTML5 biasa, JANGAN pakai Audio 3D Spasial yang sering diblokir Safari.
+    const spatialComp = $('#dragon-mover').components['spatial-tts'];
+
     if (payload.audio) {
-      const standardAudio = new Audio(payload.audio);
-      standardAudio.crossOrigin = "anonymous";
-      
-      // Begitu audio selesai, panggil tombol Balas & Kembali
-      standardAudio.onended = onFinish;
-      
-      // Jika error, panggil tombol Balas & Kembali agar aplikasi tidak stuck
-      standardAudio.onerror = (e) => {
-          console.error("Gagal memutar audio dari server:", e);
-          fallbackTTS(payload.text, onFinish);
-      };
-      
-      standardAudio.play().catch((err) => {
-          console.error("Autoplay dicegat browser:", err);
-          fallbackTTS(payload.text, onFinish);
-      });
+      // Pastikan ada mode 'cors' agar Cloudinary tidak diblokir saat decode ke Audio 3D
+      fetch(payload.audio, { mode: 'cors' }) 
+        .then(res => {
+            if (!res.ok) throw new Error("Gagal mengunduh suara dari server");
+            return res.arrayBuffer();
+        })
+        .then(buffer => spatialComp.playWorkerAudio(buffer, onFinish))
+        .catch((e) => {
+            console.error("Gagal putar audio:", e);
+            // Jika gagal, pastikan aplikasi tidak stuck dan tombol tetap muncul
+            fallbackTTS(payload.text, onFinish); 
+        });
       return;
     }
-
-    // --- Di bawah ini tetap sama (Khusus untuk Pesan Teks tanpa Suara) ---
-    const spatialComp = $('#dragon-mover').components['spatial-tts'];
 
     if (window.isWorkerReady && window.globalTTSWorker) {
       toast("Meracik Suara Spasial AI 3D...");
@@ -906,7 +897,6 @@
             deleteMsgByPayloadId(currentPayload.id);
         }
 
-        // Panggil sistem suara yang sudah kita perbaiki
         speakAndPlay(currentPayload, () => {
            if (replyAllowed) $('#btnReply').hidden = false;
            $('#btnBack').hidden = false; 
