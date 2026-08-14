@@ -26,14 +26,13 @@
     <button id="recordBtn">Mulai Rekam Suara</button>
     <p id="statusText" style="font-size: 12px; color: gray;">Tekan tombol untuk merekam</p>
 
-    <!-- Menggunakan Firebase Modular SDK -->
+    <!-- Hanya Load Firebase Database -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref as dbRef, push, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-        import { getStorage, ref as storageRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 
         // ==========================================
-        // GANTI BAGIAN INI DENGAN CONFIG FIREBASE ANDA
+        // 1. GANTI DENGAN CONFIG FIREBASE ANDA
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyCLqZ4O1n-Ggnj0yqgj9htHkoqgUyhzKDM",
@@ -45,12 +44,16 @@ messagingSenderId: "797659694923",
 appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
         };
 
-        // Inisialisasi Firebase
+        // ==========================================
+        // 2. GANTI DENGAN DATA CLOUDINARY ANDA
+        // ==========================================
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/mspxd4by/video/upload"; 
+        const CLOUDINARY_UPLOAD_PRESET = "preset_suara"; 
+
+        // Inisialisasi Firebase Database
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-        const storage = getStorage(app);
 
-        // Variabel untuk perekam suara
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
@@ -59,7 +62,7 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
         const statusText = document.getElementById('statusText');
         const chatBox = document.getElementById('chatBox');
 
-        // Fungsi Memuat Pesan (Filter 24 Jam Terakhir)
+        // Memuat Pesan dengan Filter 24 Jam
         function loadMessages() {
             chatBox.innerHTML = ''; 
             const pesanRef = dbRef(database, 'pesan_global');
@@ -69,10 +72,8 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
             onChildAdded(pesanRef, (snapshot) => {
                 const data = snapshot.val();
                 
-                // HANYA TAMPILKAN JIKA USIA PESAN KURANG DARI 24 JAM
                 if (waktuSekarang - data.timestamp <= WAKTU_24_JAM) {
                     const timeString = new Date(data.timestamp).toLocaleTimeString('id-ID');
-                    
                     const msgDiv = document.createElement('div');
                     msgDiv.className = 'message';
                     msgDiv.innerHTML = `
@@ -80,41 +81,45 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
                         <audio controls src="${data.audioUrl}"></audio>
                     `;
                     chatBox.appendChild(msgDiv);
-                    chatBox.scrollTop = chatBox.scrollHeight; // Auto scroll ke bawah
+                    chatBox.scrollTop = chatBox.scrollHeight;
                 }
             });
         }
 
-        // Setup Media Recorder (Merekam Suara User)
+        // Setup Mikrofon
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
                 mediaRecorder = new MediaRecorder(stream);
-
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
+                mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
 
                 mediaRecorder.onstop = async () => {
-                    statusText.innerText = "Mengunggah suara...";
+                    statusText.innerText = "Mengunggah suara ke Cloudinary...";
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    audioChunks = []; // Reset
+                    audioChunks = [];
 
-                    // 1. Upload ke Storage
-                    const fileName = `voice_chats/audio_${Date.now()}.webm`;
-                    const fileRef = storageRef(storage, fileName);
-                    
+                    // Proses Upload ke Cloudinary
+                    const formData = new FormData();
+                    formData.append("file", audioBlob);
+                    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
                     try {
-                        await uploadBytes(fileRef, audioBlob);
-                        const downloadUrl = await getDownloadURL(fileRef);
-
-                        // 2. Simpan URL ke Realtime Database
-                        await push(dbRef(database, 'pesan_global'), {
-                            audioUrl: downloadUrl,
-                            timestamp: Date.now()
+                        const response = await fetch(CLOUDINARY_URL, {
+                            method: "POST",
+                            body: formData
                         });
+                        const data = await response.json();
                         
-                        statusText.innerText = "Pesan terkirim!";
-                        setTimeout(() => statusText.innerText = "Tekan tombol untuk merekam", 2000);
+                        if (data.secure_url) {
+                            // Simpan link URL Cloudinary ke Firebase Database
+                            await push(dbRef(database, 'pesan_global'), {
+                                audioUrl: data.secure_url,
+                                timestamp: Date.now()
+                            });
+                            statusText.innerText = "Pesan terkirim!";
+                            setTimeout(() => statusText.innerText = "Tekan tombol untuk merekam", 2000);
+                        } else {
+                            throw new Error("Gagal mendapatkan URL dari Cloudinary");
+                        }
                     } catch (error) {
                         console.error("Error:", error);
                         statusText.innerText = "Gagal mengirim pesan.";
@@ -122,14 +127,13 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
                 };
             })
             .catch(err => {
-                console.error("Mic access denied:", err);
+                console.error("Mic error:", err);
                 statusText.innerText = "Izinkan akses mikrofon di browser!";
             });
 
-        // Event Listener Tombol Rekam
+        // Tombol Rekam
         recordBtn.addEventListener('click', () => {
-            if (!mediaRecorder) return alert("Mikrofon belum siap atau tidak diizinkan.");
-
+            if (!mediaRecorder) return alert("Mikrofon belum siap.");
             if (!isRecording) {
                 mediaRecorder.start();
                 isRecording = true;
@@ -144,7 +148,6 @@ appId: "1:797659694923:web:762c760cd1dd812c5d0ace"
             }
         });
 
-        // Panggil fungsi saat web dibuka
         loadMessages();
     </script>
 </body>
